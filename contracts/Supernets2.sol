@@ -35,7 +35,7 @@ contract Supernets2 is
      * @param minForcedTimestamp Minimum timestamp of the force batch data, empty when non forced batch
      */
     struct BatchData {
-        bytes transactionsHash;
+        bytes32 transactionsHash;
         bytes32 globalExitRoot;
         uint64 timestamp;
         uint64 minForcedTimestamp;
