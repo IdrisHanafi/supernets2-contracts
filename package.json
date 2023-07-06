@@ -1,7 +1,7 @@
 {
   "name": "supernets2-contracts",
   "description": "Core contracts for the Polygon Supernets 2",
-  "version": "0.6.0.0",
+  "version": "0.0.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/0xPolygon/supernets2-contracts.git"
