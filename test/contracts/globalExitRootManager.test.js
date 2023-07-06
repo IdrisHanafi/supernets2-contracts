@@ -8,52 +8,52 @@ const zero32bytes = '0x000000000000000000000000000000000000000000000000000000000
 
 describe('Global Exit Root', () => {
     let rollup;
-    let PolygonZkEVMBridge;
+    let Supernets2dot0Bridge;
 
-    let polygonZkEVMGlobalExitRoot;
+    let supernets2dot0GlobalExitRoot;
     beforeEach('Deploy contracts', async () => {
         // load signers
-        [, rollup, PolygonZkEVMBridge] = await ethers.getSigners();
+        [, rollup, Supernets2dot0Bridge] = await ethers.getSigners();
 
         // deploy global exit root manager
-        const PolygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory('PolygonZkEVMGlobalExitRoot');
+        const Supernets2dot0GlobalExitRootFactory = await ethers.getContractFactory('Supernets2dot0GlobalExitRoot');
 
-        polygonZkEVMGlobalExitRoot = await PolygonZkEVMGlobalExitRootFactory.deploy(
+        supernets2dot0GlobalExitRoot = await Supernets2dot0GlobalExitRootFactory.deploy(
             rollup.address,
-            PolygonZkEVMBridge.address,
+            Supernets2dot0Bridge.address,
         );
-        await polygonZkEVMGlobalExitRoot.deployed();
+        await supernets2dot0GlobalExitRoot.deployed();
     });
 
     it('should check the constructor parameters', async () => {
-        expect(await polygonZkEVMGlobalExitRoot.rollupAddress()).to.be.equal(rollup.address);
-        expect(await polygonZkEVMGlobalExitRoot.bridgeAddress()).to.be.equal(PolygonZkEVMBridge.address);
-        expect(await polygonZkEVMGlobalExitRoot.lastRollupExitRoot()).to.be.equal(zero32bytes);
-        expect(await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot()).to.be.equal(zero32bytes);
+        expect(await supernets2dot0GlobalExitRoot.rollupAddress()).to.be.equal(rollup.address);
+        expect(await supernets2dot0GlobalExitRoot.bridgeAddress()).to.be.equal(Supernets2dot0Bridge.address);
+        expect(await supernets2dot0GlobalExitRoot.lastRollupExitRoot()).to.be.equal(zero32bytes);
+        expect(await supernets2dot0GlobalExitRoot.lastMainnetExitRoot()).to.be.equal(zero32bytes);
     });
 
     it('should update root and check global exit root', async () => {
         const newRootRollup = ethers.utils.hexlify(ethers.utils.randomBytes(32));
 
-        await expect(polygonZkEVMGlobalExitRoot.updateExitRoot(newRootRollup))
+        await expect(supernets2dot0GlobalExitRoot.updateExitRoot(newRootRollup))
             .to.be.revertedWith('OnlyAllowedContracts');
 
         // Update root from the rollup
-        await expect(polygonZkEVMGlobalExitRoot.connect(rollup).updateExitRoot(newRootRollup))
-            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot')
+        await expect(supernets2dot0GlobalExitRoot.connect(rollup).updateExitRoot(newRootRollup))
+            .to.emit(supernets2dot0GlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(zero32bytes, newRootRollup);
 
-        expect(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot())
+        expect(await supernets2dot0GlobalExitRoot.getLastGlobalExitRoot())
             .to.be.equal(calculateGlobalExitRoot(zero32bytes, newRootRollup));
 
-        // Update root from the PolygonZkEVMBridge
+        // Update root from the Supernets2dot0Bridge
         const newRootBridge = ethers.utils.hexlify(ethers.utils.randomBytes(32));
-        await expect(polygonZkEVMGlobalExitRoot.connect(PolygonZkEVMBridge).updateExitRoot(newRootBridge))
-            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot')
+        await expect(supernets2dot0GlobalExitRoot.connect(Supernets2dot0Bridge).updateExitRoot(newRootBridge))
+            .to.emit(supernets2dot0GlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(newRootBridge, newRootRollup);
 
-        expect(await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot()).to.be.equal(newRootBridge);
-        expect(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot())
+        expect(await supernets2dot0GlobalExitRoot.lastMainnetExitRoot()).to.be.equal(newRootBridge);
+        expect(await supernets2dot0GlobalExitRoot.getLastGlobalExitRoot())
             .to.be.equal(calculateGlobalExitRoot(newRootBridge, newRootRollup));
     });
 });

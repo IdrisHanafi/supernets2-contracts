@@ -62,7 +62,7 @@ async function main() {
                     [timelockAddress],
                     [timelockAddress],
                     timelockAddress,
-                    deployOutputParameters.polygonZkEVMAddress,
+                    deployOutputParameters.supernets2dot0Address,
                 ],
             },
         );
@@ -87,12 +87,12 @@ async function main() {
         await hre.run(
             'verify:verify',
             {
-                address: deployOutputParameters.polygonZkEVMAddress,
+                address: deployOutputParameters.supernets2dot0Address,
                 constructorArguments: [
-                    deployOutputParameters.polygonZkEVMGlobalExitRootAddress,
+                    deployOutputParameters.supernets2dot0GlobalExitRootAddress,
                     deployOutputParameters.maticTokenAddress,
                     deployOutputParameters.verifierAddress,
-                    deployOutputParameters.polygonZkEVMBridgeAddress,
+                    deployOutputParameters.supernets2dot0BridgeAddress,
                     deployOutputParameters.chainID,
                     deployOutputParameters.forkID,
                 ],
@@ -107,10 +107,10 @@ async function main() {
         await hre.run(
             'verify:verify',
             {
-                address: deployOutputParameters.polygonZkEVMGlobalExitRootAddress,
+                address: deployOutputParameters.supernets2dot0GlobalExitRootAddress,
                 constructorArguments: [
-                    deployOutputParameters.polygonZkEVMAddress,
-                    deployOutputParameters.polygonZkEVMBridgeAddress,
+                    deployOutputParameters.supernets2dot0Address,
+                    deployOutputParameters.supernets2dot0BridgeAddress,
                 ],
             },
         );
@@ -122,7 +122,7 @@ async function main() {
         await hre.run(
             'verify:verify',
             {
-                address: deployOutputParameters.polygonZkEVMBridgeAddress,
+                address: deployOutputParameters.supernets2dot0BridgeAddress,
             },
         );
     } catch (error) {

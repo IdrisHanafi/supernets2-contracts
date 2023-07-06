@@ -4,7 +4,7 @@ const { ethers, upgrades } = require('hardhat');
 const { contractUtils } = require('@0xpolygonhermez/zkevm-commonjs');
 
 describe('Polygon ZK-EVM snark stark input test', () => {
-    let polygonZkEVMContract;
+    let supernets2dot0Contract;
     const genesisRoot = '0x0000000000000000000000000000000000000000000000000000000000000001';
     let randomSigner;
 
@@ -19,9 +19,9 @@ describe('Polygon ZK-EVM snark stark input test', () => {
         // load signers
         [randomSigner] = await ethers.getSigners();
 
-        // deploy PolygonZkEVMMock
-        const PolygonZkEVMFactory = await ethers.getContractFactory('PolygonZkEVMMock');
-        polygonZkEVMContract = await upgrades.deployProxy(PolygonZkEVMFactory, [], {
+        // deploy Supernets2dot0Mock
+        const Supernets2dot0Factory = await ethers.getContractFactory('Supernets2dot0Mock');
+        supernets2dot0Contract = await upgrades.deployProxy(Supernets2dot0Factory, [], {
             initializer: false,
             constructorArgs: [
                 randomSigner.address,
@@ -34,7 +34,7 @@ describe('Polygon ZK-EVM snark stark input test', () => {
             unsafeAllow: ['constructor', 'state-variable-immutable'],
         });
 
-        await polygonZkEVMContract.initialize(
+        await supernets2dot0Contract.initialize(
             {
                 admin: randomSigner.address,
                 trustedSequencer: randomSigner.address,
@@ -48,7 +48,7 @@ describe('Polygon ZK-EVM snark stark input test', () => {
             version,
         );
 
-        await polygonZkEVMContract.deployed();
+        await supernets2dot0Contract.deployed();
     });
 
     it('Check Accumualte input Hash', async () => {
@@ -66,7 +66,7 @@ describe('Polygon ZK-EVM snark stark input test', () => {
             timestamp,
             sequencerAddr,
         );
-        const accumulateInputHashSC = await polygonZkEVMContract.calculateAccInputHash(
+        const accumulateInputHashSC = await supernets2dot0Contract.calculateAccInputHash(
             oldAccInputHash,
             batchL2Data,
             globalExitRoot,
@@ -91,9 +91,9 @@ describe('Polygon ZK-EVM snark stark input test', () => {
         const lastPendingStateConsolidated = 0;
         const sequencedTimestamp = 999;
         // set smart contract with correct parameters
-        await polygonZkEVMContract.setStateRoot(oldStateRoot, oldNumBatch);
-        await polygonZkEVMContract.setSequencedBatches(newNumBatch, newAccInputHash, sequencedTimestamp, lastPendingStateConsolidated);
-        await polygonZkEVMContract.setSequencedBatch(1);
+        await supernets2dot0Contract.setStateRoot(oldStateRoot, oldNumBatch);
+        await supernets2dot0Contract.setSequencedBatches(newNumBatch, newAccInputHash, sequencedTimestamp, lastPendingStateConsolidated);
+        await supernets2dot0Contract.setSequencedBatch(1);
 
         await ethers.provider.send('hardhat_impersonateAccount', [aggregatorAddress]);
         const aggregator = await ethers.getSigner(aggregatorAddress);
@@ -104,7 +104,7 @@ describe('Polygon ZK-EVM snark stark input test', () => {
 
         // Compute SC input
         const pendingStateNum = 0;
-        const inputSnarkSC = await polygonZkEVMContract.connect(aggregator).getNextSnarkInput(
+        const inputSnarkSC = await supernets2dot0Contract.connect(aggregator).getNextSnarkInput(
             pendingStateNum,
             oldNumBatch,
             newNumBatch,

@@ -5,12 +5,12 @@ const {
     getLeafValue,
 } = require('@0xpolygonhermez/zkevm-commonjs').mtBridgeUtils;
 
-describe('PolygonZkEVMBridge Contract werid metadata', () => {
+describe('Supernets2dot0Bridge Contract werid metadata', () => {
     let deployer;
     let rollup;
 
-    let polygonZkEVMGlobalExitRoot;
-    let polygonZkEVMBridgeContract;
+    let supernets2dot0GlobalExitRoot;
+    let supernets2dot0BridgeContract;
     let tokenContract;
 
     const tokenName = 'Matic Token';
@@ -22,21 +22,21 @@ describe('PolygonZkEVMBridge Contract werid metadata', () => {
     const networkIDRollup = 1;
     const LEAF_TYPE_ASSET = 0;
 
-    const polygonZkEVMAddress = ethers.constants.AddressZero;
+    const supernets2dot0Address = ethers.constants.AddressZero;
 
     beforeEach('Deploy contracts', async () => {
         // load signers
         [deployer, rollup] = await ethers.getSigners();
 
-        // deploy PolygonZkEVMBridge
-        const polygonZkEVMBridgeFactory = await ethers.getContractFactory('PolygonZkEVMBridge');
-        polygonZkEVMBridgeContract = await upgrades.deployProxy(polygonZkEVMBridgeFactory, [], { initializer: false });
+        // deploy Supernets2dot0Bridge
+        const supernets2dot0BridgeFactory = await ethers.getContractFactory('Supernets2dot0Bridge');
+        supernets2dot0BridgeContract = await upgrades.deployProxy(supernets2dot0BridgeFactory, [], { initializer: false });
 
         // deploy global exit root manager
-        const polygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory('PolygonZkEVMGlobalExitRoot');
-        polygonZkEVMGlobalExitRoot = await polygonZkEVMGlobalExitRootFactory.deploy(rollup.address, polygonZkEVMBridgeContract.address);
+        const supernets2dot0GlobalExitRootFactory = await ethers.getContractFactory('Supernets2dot0GlobalExitRoot');
+        supernets2dot0GlobalExitRoot = await supernets2dot0GlobalExitRootFactory.deploy(rollup.address, supernets2dot0BridgeContract.address);
 
-        await polygonZkEVMBridgeContract.initialize(networkIDMainnet, polygonZkEVMGlobalExitRoot.address, polygonZkEVMAddress);
+        await supernets2dot0BridgeContract.initialize(networkIDMainnet, supernets2dot0GlobalExitRoot.address, supernets2dot0Address);
 
         // deploy token
         const maticTokenFactory = await ethers.getContractFactory('TokenWrapped');
@@ -50,7 +50,7 @@ describe('PolygonZkEVMBridge Contract werid metadata', () => {
         await tokenContract.mint(deployer.address, tokenInitialBalance);
     });
 
-    it('should PolygonZkEVMBridge with weird token metadata', async () => {
+    it('should Supernets2dot0Bridge with weird token metadata', async () => {
         const weirdErc20Metadata = await ethers.getContractFactory('ERC20WeirdMetadata');
 
         const nameWeird = 'nameToken';
@@ -69,9 +69,9 @@ describe('PolygonZkEVMBridge Contract werid metadata', () => {
 
         // mint and approve tokens
         await weirdTokenContract.mint(deployer.address, tokenInitialBalance);
-        await weirdTokenContract.approve(polygonZkEVMBridgeContract.address, tokenInitialBalance);
+        await weirdTokenContract.approve(supernets2dot0BridgeContract.address, tokenInitialBalance);
 
-        const depositCount = await polygonZkEVMBridgeContract.depositCount();
+        const depositCount = await supernets2dot0BridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const tokenAddress = weirdTokenContract.address;
         const amount = ethers.utils.parseEther('10');
@@ -100,14 +100,14 @@ describe('PolygonZkEVMBridge Contract werid metadata', () => {
         merkleTree.add(leafValue);
         const rootJSMainnet = merkleTree.getRoot();
 
-        await expect(polygonZkEVMBridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
-            .to.emit(polygonZkEVMBridgeContract, 'BridgeEvent')
+        await expect(supernets2dot0BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
+            .to.emit(supernets2dot0BridgeContract, 'BridgeEvent')
             .withArgs(LEAF_TYPE_ASSET, originNetwork, tokenAddress, destinationNetwork, destinationAddress, amount, metadata, depositCount);
 
-        expect(await polygonZkEVMBridgeContract.getDepositRoot()).to.be.equal(rootJSMainnet);
+        expect(await supernets2dot0BridgeContract.getDepositRoot()).to.be.equal(rootJSMainnet);
     });
 
-    it('should PolygonZkEVMBridge with weird token metadata with reverts', async () => {
+    it('should Supernets2dot0Bridge with weird token metadata with reverts', async () => {
         const weirdErc20Metadata = await ethers.getContractFactory('ERC20WeirdMetadata');
 
         const nameWeird = 'nameToken';
@@ -126,9 +126,9 @@ describe('PolygonZkEVMBridge Contract werid metadata', () => {
 
         // mint and approve tokens
         await weirdTokenContract.mint(deployer.address, tokenInitialBalance);
-        await weirdTokenContract.approve(polygonZkEVMBridgeContract.address, tokenInitialBalance);
+        await weirdTokenContract.approve(supernets2dot0BridgeContract.address, tokenInitialBalance);
 
-        const depositCount = await polygonZkEVMBridgeContract.depositCount();
+        const depositCount = await supernets2dot0BridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const tokenAddress = weirdTokenContract.address;
         const amount = ethers.utils.parseEther('10');
@@ -136,7 +136,7 @@ describe('PolygonZkEVMBridge Contract werid metadata', () => {
         const destinationAddress = deployer.address;
 
         // Since cannot decode decimals
-        await expect(polygonZkEVMBridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x')).to.be.reverted;
+        await expect(supernets2dot0BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x')).to.be.reverted;
 
         // toogle revert
         await weirdTokenContract.toggleIsRevert();
@@ -166,14 +166,14 @@ describe('PolygonZkEVMBridge Contract werid metadata', () => {
         merkleTree.add(leafValue);
         const rootJSMainnet = merkleTree.getRoot();
 
-        await expect(polygonZkEVMBridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
-            .to.emit(polygonZkEVMBridgeContract, 'BridgeEvent')
+        await expect(supernets2dot0BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
+            .to.emit(supernets2dot0BridgeContract, 'BridgeEvent')
             .withArgs(LEAF_TYPE_ASSET, originNetwork, tokenAddress, destinationNetwork, destinationAddress, amount, metadata, depositCount);
 
-        expect(await polygonZkEVMBridgeContract.getDepositRoot()).to.be.equal(rootJSMainnet);
+        expect(await supernets2dot0BridgeContract.getDepositRoot()).to.be.equal(rootJSMainnet);
     });
 
-    it('should PolygonZkEVMBridge with weird token metadata with empty data', async () => {
+    it('should Supernets2dot0Bridge with weird token metadata with empty data', async () => {
         const weirdErc20Metadata = await ethers.getContractFactory('ERC20WeirdMetadata');
 
         const nameWeird = '';
@@ -192,9 +192,9 @@ describe('PolygonZkEVMBridge Contract werid metadata', () => {
 
         // mint and approve tokens
         await weirdTokenContract.mint(deployer.address, tokenInitialBalance);
-        await weirdTokenContract.approve(polygonZkEVMBridgeContract.address, tokenInitialBalance);
+        await weirdTokenContract.approve(supernets2dot0BridgeContract.address, tokenInitialBalance);
 
-        const depositCount = await polygonZkEVMBridgeContract.depositCount();
+        const depositCount = await supernets2dot0BridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const tokenAddress = weirdTokenContract.address;
         const amount = ethers.utils.parseEther('10');
@@ -227,10 +227,10 @@ describe('PolygonZkEVMBridge Contract werid metadata', () => {
         merkleTree.add(leafValue);
         const rootJSMainnet = merkleTree.getRoot();
 
-        await expect(polygonZkEVMBridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
-            .to.emit(polygonZkEVMBridgeContract, 'BridgeEvent')
+        await expect(supernets2dot0BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
+            .to.emit(supernets2dot0BridgeContract, 'BridgeEvent')
             .withArgs(LEAF_TYPE_ASSET, originNetwork, tokenAddress, destinationNetwork, destinationAddress, amount, metadata, depositCount);
 
-        expect(await polygonZkEVMBridgeContract.getDepositRoot()).to.be.equal(rootJSMainnet);
+        expect(await supernets2dot0BridgeContract.getDepositRoot()).to.be.equal(rootJSMainnet);
     });
 });

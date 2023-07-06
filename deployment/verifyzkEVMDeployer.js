@@ -18,7 +18,7 @@ async function main() {
         await hre.run(
             'verify:verify',
             {
-                address: deployParameters.zkEVMDeployerAddress,
+                address: deployParameters.supernets2dot0DeployerAddress,
                 constructorArguments: [
                     deployParameters.initialZkEVMDeployerOwner,
                 ],

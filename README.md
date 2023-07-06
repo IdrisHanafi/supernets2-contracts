@@ -16,10 +16,10 @@ Private keys and mnemonics contained in this repository are used for internal te
 ## Repository structure
 
 - `contracts`: zkevm contracts
-  - `PolygonZkEVMBridge.sol`: transfer assets between chains
-    - `PolygonZkEVMGlobalExitRoot.sol`: manage global exit root in L1
-    - `PolygonZkEVMGlobalExitRootL2.sol`: manage global exit root in L2
-  - `PolygonZkEVM.sol`: consensus algorithm used by polygon hermez zkevm
+  - `Supernets2dot0Bridge.sol`: transfer assets between chains
+    - `Supernets2dot0GlobalExitRoot.sol`: manage global exit root in L1
+    - `Supernets2dot0GlobalExitRootL2.sol`: manage global exit root in L2
+  - `Supernets2dot0.sol`: consensus algorithm used by polygon hermez zkevm
 - `docs`: specs and useful links
 - `test`: contracts tests
 

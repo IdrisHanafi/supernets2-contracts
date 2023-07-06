@@ -52,7 +52,7 @@ This script verifies the deployed bytecode of the address provided in `deploymen
 
 ## Verify genesis root
 
-At the end of the previous script we also verify that the genesis provided in the`deploymentMainnet.json` matches hte one in the `polygonZkEVM`
+At the end of the previous script we also verify that the genesis provided in the`deploymentMainnet.json` matches hte one in the `supernets2dot0`
 
 In order to verify the genesis, you can the script to generate it. The script in a very similar behaviour of the last script, deploy localy the contracts and then copy the deployed btyecode into the corresponding address.
 

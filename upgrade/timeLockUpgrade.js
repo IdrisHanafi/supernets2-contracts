@@ -49,12 +49,12 @@ async function main() {
     // Upgrade zkevm
     for (const upgrade of upgradeParameters.upgrades) {
         const proxyPolygonAddress = upgrade.address;
-        const polygonZkEVMFactory = await ethers.getContractFactory(upgrade.contractName, deployer);
+        const supernets2dot0Factory = await ethers.getContractFactory(upgrade.contractName, deployer);
 
         let newImplPolygonAddress;
 
         if (upgrade.constructorArgs) {
-            newImplPolygonAddress = await upgrades.prepareUpgrade(proxyPolygonAddress, polygonZkEVMFactory,
+            newImplPolygonAddress = await upgrades.prepareUpgrade(proxyPolygonAddress, supernets2dot0Factory,
                 {
                     constructorArgs: upgrade.constructorArgs,
                     unsafeAllow: ['constructor', 'state-variable-immutable'],
@@ -66,7 +66,7 @@ async function main() {
             console.log(`npx hardhat verify --constructor-args upgrade/arguments.js ${newImplPolygonAddress} --network ${process.env.HARDHAT_NETWORK}\n`);
             console.log("Copy the following constructor arguments on: upgrade/arguments.js \n", upgrade.constructorArgs)
         } else {
-            newImplPolygonAddress = await upgrades.prepareUpgrade(proxyPolygonAddress, polygonZkEVMFactory);
+            newImplPolygonAddress = await upgrades.prepareUpgrade(proxyPolygonAddress, supernets2dot0Factory);
 
             console.log({ newImplPolygonAddress });
             console.log("you can verify the new impl address with:")
@@ -86,7 +86,7 @@ async function main() {
                     [
                         proxyPolygonAddress,
                         newImplPolygonAddress,
-                        polygonZkEVMFactory.interface.encodeFunctionData(
+                        supernets2dot0Factory.interface.encodeFunctionData(
                             upgrade.callAfterUpgrade.functionName,
                             upgrade.callAfterUpgrade.arguments,
                         )
@@ -112,7 +112,7 @@ async function main() {
         }
 
         // Timelock operations
-        const TimelockFactory = await ethers.getContractFactory('PolygonZkEVMTimelock', deployer);
+        const TimelockFactory = await ethers.getContractFactory('Supernets2dot0Timelock', deployer);
         const minDelay = upgradeParameters.timelockMinDelay || 0;
 
         // Schedule operation

@@ -8,18 +8,18 @@ const deployMainnet = require("./mainnetDeployment.json");
 const mainnetDeployParameters = require("./mainnetDeployParameters.json");
 
 const pathFflonkVerifier = '../artifacts/contracts/verifiers/FflonkVerifier.sol/FflonkVerifier.json';
-const pathPolygonZkEVMDeployer = '../artifacts/contracts/deployment/PolygonZkEVMDeployer.sol/PolygonZkEVMDeployer.json';
-const pathPolygonZkEVMBridge = '../artifacts/contracts/PolygonZkEVMBridge.sol/PolygonZkEVMBridge.json';
+const pathSupernets2dot0Deployer = '../artifacts/contracts/deployment/Supernets2dot0Deployer.sol/Supernets2dot0Deployer.json';
+const pathSupernets2dot0Bridge = '../artifacts/contracts/Supernets2dot0Bridge.sol/Supernets2dot0Bridge.json';
 const pathTransparentProxyOZUpgradeDep = '../node_modules/@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json';
 const pathProxyAdmin = '../artifacts/@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol/ProxyAdmin.json';
 const pathTransparentProxy = '../artifacts/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json';
-const pathPolygonZkEVMTimelock = '../artifacts/contracts/PolygonZkEVMTimelock.sol/PolygonZkEVMTimelock.json';
-const pathPolygonZkEVM = '../artifacts/contracts/PolygonZkEVM.sol/PolygonZkEVM.json';
-const pathPolygonZkEVMGlobalExitRoot = '../artifacts/contracts/PolygonZkEVMGlobalExitRoot.sol/PolygonZkEVMGlobalExitRoot.json';
+const pathSupernets2dot0Timelock = '../artifacts/contracts/Supernets2dot0Timelock.sol/Supernets2dot0Timelock.json';
+const pathSupernets2dot0 = '../artifacts/contracts/Supernets2dot0.sol/Supernets2dot0.json';
+const pathSupernets2dot0GlobalExitRoot = '../artifacts/contracts/Supernets2dot0GlobalExitRoot.sol/Supernets2dot0GlobalExitRoot.json';
 
 const FflonkVerifier = require(pathFflonkVerifier);
-const PolygonZkEVMDeployer = require(pathPolygonZkEVMDeployer);
-const PolygonZkEVMBridge = require(pathPolygonZkEVMBridge);
+const Supernets2dot0Deployer = require(pathSupernets2dot0Deployer);
+const Supernets2dot0Bridge = require(pathSupernets2dot0Bridge);
 const TransparentProxyOZUpgradeDep = require(pathTransparentProxyOZUpgradeDep);
 const ProxyAdmin = require(pathProxyAdmin);
 const TransparentProxy = require(pathTransparentProxy);
@@ -38,133 +38,133 @@ async function main() {
     console.log("Path file: ", path.join(__dirname, pathFflonkVerifier));
     console.log();
 
-    // PolygonZkEVMDeployer
-    expect(await mainnetProvider.getCode(deployMainnet.polygonZkEVMDeployerAddress))
-        .to.be.equal(PolygonZkEVMDeployer.deployedBytecode);
-    console.log("PolygonZkEVMDeployer was correctly verified")
-    console.log("Etherscan URL: ", etherscanURL + deployMainnet.polygonZkEVMDeployerAddress)
-    console.log("Path file: ", path.join(__dirname, pathPolygonZkEVMDeployer));
+    // Supernets2dot0Deployer
+    expect(await mainnetProvider.getCode(deployMainnet.supernets2dot0DeployerAddress))
+        .to.be.equal(Supernets2dot0Deployer.deployedBytecode);
+    console.log("Supernets2dot0Deployer was correctly verified")
+    console.log("Etherscan URL: ", etherscanURL + deployMainnet.supernets2dot0DeployerAddress)
+    console.log("Path file: ", path.join(__dirname, pathSupernets2dot0Deployer));
     console.log();
 
     // Bridge
     // Since this contract is a proxy, we will need to verify the implementation
-    const polygonZkEVMBridgeImpl = await getImplementationAddress(deployMainnet.polygonZkEVMBridgeAddress, mainnetProvider)
+    const supernets2dot0BridgeImpl = await getImplementationAddress(deployMainnet.supernets2dot0BridgeAddress, mainnetProvider)
 
-    expect(await mainnetProvider.getCode(polygonZkEVMBridgeImpl))
-        .to.be.equal(PolygonZkEVMBridge.deployedBytecode);
-    console.log("PolygonZkEVMBridgeAddress implementation was correctly verified")
-    console.log("Etherscan URL: ", etherscanURL + polygonZkEVMBridgeImpl)
-    console.log("Path file: ", path.join(__dirname, pathPolygonZkEVMBridge));
+    expect(await mainnetProvider.getCode(supernets2dot0BridgeImpl))
+        .to.be.equal(Supernets2dot0Bridge.deployedBytecode);
+    console.log("Supernets2dot0BridgeAddress implementation was correctly verified")
+    console.log("Etherscan URL: ", etherscanURL + supernets2dot0BridgeImpl)
+    console.log("Path file: ", path.join(__dirname, pathSupernets2dot0Bridge));
     console.log();
 
     // Check transparent Proxys
-    expect(await mainnetProvider.getCode(deployMainnet.polygonZkEVMBridgeAddress))
+    expect(await mainnetProvider.getCode(deployMainnet.supernets2dot0BridgeAddress))
         .to.be.equal(TransparentProxy.deployedBytecode);
-    console.log("PolygonZkEVMBridgeAddress proxy was correctly verified")
-    console.log("Etherscan URL: ", etherscanURL + deployMainnet.polygonZkEVMBridgeAddress);
+    console.log("Supernets2dot0BridgeAddress proxy was correctly verified")
+    console.log("Etherscan URL: ", etherscanURL + deployMainnet.supernets2dot0BridgeAddress);
     console.log("Path file: ", path.join(__dirname, pathTransparentProxy));
     console.log();
 
     // The other 3 contracts are immutables, therefore we will deploy them locally and check the btyecode against the deployed one
 
-    // PolygonZkEVMTimelock
-    const PolygonZkEVMTimelockFactory = await ethers.getContractFactory('PolygonZkEVMTimelock');
+    // Supernets2dot0Timelock
+    const Supernets2dot0TimelockFactory = await ethers.getContractFactory('Supernets2dot0Timelock');
     const timelockAddress = mainnetDeployParameters.timelockAddress; //not relevant to deployed bytecode
     const minDelayTimelock = mainnetDeployParameters.minDelayTimelock; //not relevant to deployed bytecode
 
-    const PolygonZkEVMTimelock = await PolygonZkEVMTimelockFactory.deploy(
+    const Supernets2dot0Timelock = await Supernets2dot0TimelockFactory.deploy(
         minDelayTimelock,
         [timelockAddress],
         [timelockAddress],
         timelockAddress,
-        deployMainnet.polygonZkEVMAddress,
+        deployMainnet.supernets2dot0Address,
     );
-    PolygonZkEVMTimelock.deployed()
+    Supernets2dot0Timelock.deployed()
 
-    const deployedBytecodePolygonZkEVMTimelock = await ethers.provider.getCode(PolygonZkEVMTimelock.address);
-    expect(await mainnetProvider.getCode(deployMainnet.polygonZkEVMTimelockAddress))
-        .to.be.equal(deployedBytecodePolygonZkEVMTimelock);
+    const deployedBytecodeSupernets2dot0Timelock = await ethers.provider.getCode(Supernets2dot0Timelock.address);
+    expect(await mainnetProvider.getCode(deployMainnet.supernets2dot0TimelockAddress))
+        .to.be.equal(deployedBytecodeSupernets2dot0Timelock);
     console.log("Timelock was correctly verified")
-    console.log("Etherscan URL: ", etherscanURL + deployMainnet.polygonZkEVMTimelockAddress);
-    console.log("Path file: ", path.join(__dirname, pathPolygonZkEVMTimelock));
+    console.log("Etherscan URL: ", etherscanURL + deployMainnet.supernets2dot0TimelockAddress);
+    console.log("Path file: ", path.join(__dirname, pathSupernets2dot0Timelock));
     console.log();
 
-    // polygonZkEVMGlobalExitRoot
-    const PolygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory('PolygonZkEVMGlobalExitRoot');
-    const polygonZkEVMGlobalExitRoot = await PolygonZkEVMGlobalExitRootFactory.deploy(
-        deployMainnet.polygonZkEVMAddress,
-        deployMainnet.polygonZkEVMBridgeAddress
+    // supernets2dot0GlobalExitRoot
+    const Supernets2dot0GlobalExitRootFactory = await ethers.getContractFactory('Supernets2dot0GlobalExitRoot');
+    const supernets2dot0GlobalExitRoot = await Supernets2dot0GlobalExitRootFactory.deploy(
+        deployMainnet.supernets2dot0Address,
+        deployMainnet.supernets2dot0BridgeAddress
     );
-    polygonZkEVMGlobalExitRoot.deployed()
+    supernets2dot0GlobalExitRoot.deployed()
 
-    const deployedBytecodeGlobalExitRoot = await ethers.provider.getCode(polygonZkEVMGlobalExitRoot.address);
-    const polygonZkEVMGlobalImpl = await getImplementationAddress(deployMainnet.polygonZkEVMGlobalExitRootAddress, mainnetProvider)
+    const deployedBytecodeGlobalExitRoot = await ethers.provider.getCode(supernets2dot0GlobalExitRoot.address);
+    const supernets2dot0GlobalImpl = await getImplementationAddress(deployMainnet.supernets2dot0GlobalExitRootAddress, mainnetProvider)
 
-    expect(await mainnetProvider.getCode(polygonZkEVMGlobalImpl))
+    expect(await mainnetProvider.getCode(supernets2dot0GlobalImpl))
         .to.be.equal(deployedBytecodeGlobalExitRoot);
-    console.log("PolygonZkEVMGlobalExitRoot implementation was correctly verified")
-    console.log("Etherscan URL: ", etherscanURL + polygonZkEVMGlobalImpl);
-    console.log("Path file: ", path.join(__dirname, pathPolygonZkEVMGlobalExitRoot));
+    console.log("Supernets2dot0GlobalExitRoot implementation was correctly verified")
+    console.log("Etherscan URL: ", etherscanURL + supernets2dot0GlobalImpl);
+    console.log("Path file: ", path.join(__dirname, pathSupernets2dot0GlobalExitRoot));
     console.log();
 
     // Check transparent Proxys
-    expect(await mainnetProvider.getCode(deployMainnet.polygonZkEVMGlobalExitRootAddress))
+    expect(await mainnetProvider.getCode(deployMainnet.supernets2dot0GlobalExitRootAddress))
         .to.be.equal(TransparentProxyOZUpgradeDep.deployedBytecode);
-    console.log("PolygonZkEVMGlobalExitRoot proxy was correctly verified")
-    console.log("Etherscan URL: ", etherscanURL + deployMainnet.polygonZkEVMGlobalExitRootAddress);
+    console.log("Supernets2dot0GlobalExitRoot proxy was correctly verified")
+    console.log("Etherscan URL: ", etherscanURL + deployMainnet.supernets2dot0GlobalExitRootAddress);
     console.log("Path file: ", path.join(__dirname, pathTransparentProxyOZUpgradeDep));
     console.log();
 
-    // PolygonZkEVM
+    // Supernets2dot0
     const mainnetChainID = mainnetDeployParameters.chainID;
     const mainnetForkID = mainnetDeployParameters.forkID;
     const maticAddress = mainnetDeployParameters.maticTokenAddress;
 
-    const PolygonZkEVMFactory = await ethers.getContractFactory('PolygonZkEVM');
-    const polygonZkEVMContract = await PolygonZkEVMFactory.deploy(
-        deployMainnet.polygonZkEVMGlobalExitRootAddress,
+    const Supernets2dot0Factory = await ethers.getContractFactory('Supernets2dot0');
+    const supernets2dot0Contract = await Supernets2dot0Factory.deploy(
+        deployMainnet.supernets2dot0GlobalExitRootAddress,
         maticAddress,
         deployMainnet.fflonkVerifierAddress,
-        deployMainnet.polygonZkEVMBridgeAddress,
+        deployMainnet.supernets2dot0BridgeAddress,
         mainnetChainID,
         mainnetForkID,
     );
-    polygonZkEVMContract.deployed()
+    supernets2dot0Contract.deployed()
 
-    const deployedBytecodePolygonZkEVM = await ethers.provider.getCode(polygonZkEVMContract.address);
-    const polygonZkEVMImpl = await getImplementationAddress(deployMainnet.polygonZkEVMAddress, mainnetProvider)
+    const deployedBytecodeSupernets2dot0 = await ethers.provider.getCode(supernets2dot0Contract.address);
+    const supernets2dot0Impl = await getImplementationAddress(deployMainnet.supernets2dot0Address, mainnetProvider)
 
-    expect(await mainnetProvider.getCode(polygonZkEVMImpl))
-        .to.be.equal(deployedBytecodePolygonZkEVM);
-    console.log("PolygonZkEVMAddress implementation was correctly verified")
-    console.log("Etherscan URL: ", etherscanURL + polygonZkEVMImpl);
-    console.log("Path file: ", path.join(__dirname, pathPolygonZkEVM));
+    expect(await mainnetProvider.getCode(supernets2dot0Impl))
+        .to.be.equal(deployedBytecodeSupernets2dot0);
+    console.log("Supernets2dot0Address implementation was correctly verified")
+    console.log("Etherscan URL: ", etherscanURL + supernets2dot0Impl);
+    console.log("Path file: ", path.join(__dirname, pathSupernets2dot0));
     console.log();
     
     // Check transparent Proxys
-    expect(await mainnetProvider.getCode(deployMainnet.polygonZkEVMAddress))
+    expect(await mainnetProvider.getCode(deployMainnet.supernets2dot0Address))
         .to.be.equal(TransparentProxyOZUpgradeDep.deployedBytecode);
-    console.log("PolygonZkEVMAddress proxy was correctly verified")
-    console.log("Etherscan URL: ", etherscanURL + deployMainnet.polygonZkEVMAddress);
+    console.log("Supernets2dot0Address proxy was correctly verified")
+    console.log("Etherscan URL: ", etherscanURL + deployMainnet.supernets2dot0Address);
     console.log("Path file: ", path.join(__dirname, pathTransparentProxyOZUpgradeDep));
     console.log();
 
     // Check proxy Admin
-    const polygonZkEVMBridgeAdmin = await getProxyAdminAddress(deployMainnet.polygonZkEVMBridgeAddress, mainnetProvider);
-    const polygonZkEVMAdmin = await getProxyAdminAddress(deployMainnet.polygonZkEVMAddress, mainnetProvider);
-    const polygonZkEVMGlobalExitRootAdmin = await getProxyAdminAddress(deployMainnet.polygonZkEVMGlobalExitRootAddress, mainnetProvider);
+    const supernets2dot0BridgeAdmin = await getProxyAdminAddress(deployMainnet.supernets2dot0BridgeAddress, mainnetProvider);
+    const supernets2dot0Admin = await getProxyAdminAddress(deployMainnet.supernets2dot0Address, mainnetProvider);
+    const supernets2dot0GlobalExitRootAdmin = await getProxyAdminAddress(deployMainnet.supernets2dot0GlobalExitRootAddress, mainnetProvider);
 
-    expect(polygonZkEVMBridgeAdmin).to.be.equal(polygonZkEVMAdmin);
-    expect(polygonZkEVMAdmin).to.be.equal(polygonZkEVMGlobalExitRootAdmin);
-    expect(await mainnetProvider.getCode(polygonZkEVMAdmin))
+    expect(supernets2dot0BridgeAdmin).to.be.equal(supernets2dot0Admin);
+    expect(supernets2dot0Admin).to.be.equal(supernets2dot0GlobalExitRootAdmin);
+    expect(await mainnetProvider.getCode(supernets2dot0Admin))
         .to.be.equal(ProxyAdmin.deployedBytecode);
     console.log("ProxyAdmin proxy was correctly verified")
-    console.log("Etherscan URL: ", etherscanURL + polygonZkEVMAdmin);
+    console.log("Etherscan URL: ", etherscanURL + supernets2dot0Admin);
     console.log("Path file: ", path.join(__dirname, pathProxyAdmin));
     console.log();
 
     // Assert genesis is the same as the provided in the document
-    let mainnetPolygonZkVEM = (await ethers.getContractFactory('PolygonZkEVM', mainnetProvider)).attach(deployMainnet.polygonZkEVMAddress);
+    let mainnetPolygonZkVEM = (await ethers.getContractFactory('Supernets2dot0', mainnetProvider)).attach(deployMainnet.supernets2dot0Address);
     mainnetPolygonZkVEM = mainnetPolygonZkVEM.connect(mainnetProvider);
     expect(await mainnetPolygonZkVEM.batchNumToStateRoot(0)).to.be.equal(deployMainnet.genesisRoot);
     console.log("Genesis root was correctly verified:",deployMainnet.genesisRoot)

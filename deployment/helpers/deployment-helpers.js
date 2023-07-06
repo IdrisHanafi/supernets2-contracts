@@ -5,8 +5,8 @@ const { ethers } = require('hardhat');
 
 const gasPriceKeylessDeployment = '100'; // 100 gweis
 
-async function deployPolygonZkEVMDeployer(deployerAddress, signer) {
-    const PolgonZKEVMDeployerFactory = await ethers.getContractFactory('PolygonZkEVMDeployer', signer);
+async function deploySupernets2dot0Deployer(deployerAddress, signer) {
+    const PolgonZKEVMDeployerFactory = await ethers.getContractFactory('Supernets2dot0Deployer', signer);
 
     const deployTxZKEVMDeployer = (PolgonZKEVMDeployerFactory.getDeployTransaction(
         deployerAddress,
@@ -34,9 +34,9 @@ async function deployPolygonZkEVMDeployer(deployerAddress, signer) {
     const totalEther = gasLimit.mul(gasPrice); // 0.1 ether
 
     // Check if it's already deployed
-    const zkEVMDeployerAddress = ethers.utils.getContractAddress(resultTransaction);
-    if (await signer.provider.getCode(zkEVMDeployerAddress) !== '0x') {
-        const zkEVMDeployerContract = PolgonZKEVMDeployerFactory.attach(zkEVMDeployerAddress);
+    const supernets2dot0DeployerAddress = ethers.utils.getContractAddress(resultTransaction);
+    if (await signer.provider.getCode(supernets2dot0DeployerAddress) !== '0x') {
+        const zkEVMDeployerContract = PolgonZKEVMDeployerFactory.attach(supernets2dot0DeployerAddress);
         expect(await zkEVMDeployerContract.owner()).to.be.equal(signer.address);
         return [zkEVMDeployerContract, ethers.constants.AddressZero];
     }
@@ -51,7 +51,7 @@ async function deployPolygonZkEVMDeployer(deployerAddress, signer) {
     // Deploy zkEVMDeployer
     await (await signer.provider.sendTransaction(serializedTransaction)).wait();
 
-    const zkEVMDeployerContract = await PolgonZKEVMDeployerFactory.attach(zkEVMDeployerAddress);
+    const zkEVMDeployerContract = await PolgonZKEVMDeployerFactory.attach(supernets2dot0DeployerAddress);
     expect(await zkEVMDeployerContract.owner()).to.be.equal(deployerAddress);
     return [zkEVMDeployerContract, resultTransaction.from];
 }
@@ -100,6 +100,6 @@ async function create2Deployment(polgonZKEVMDeployerContract, salt, deployTransa
 }
 
 module.exports = {
-    deployPolygonZkEVMDeployer,
+    deploySupernets2dot0Deployer,
     create2Deployment,
 };
