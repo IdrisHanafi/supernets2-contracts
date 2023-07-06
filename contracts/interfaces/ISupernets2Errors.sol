@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-interface ISupernets2dot0Errors {
+interface ISupernets2Errors {
     /**
      * @dev Thrown when the pending state timeout exceeds the _HALT_AGGREGATION_TIMEOUT
      */

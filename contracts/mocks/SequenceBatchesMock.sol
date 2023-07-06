@@ -4,7 +4,7 @@ import "../lib/DepositContract.sol";
 import "hardhat/console.sol";
 
 /**
- * This contract will be used as a helper for Supernets2dot0 tests
+ * This contract will be used as a helper for Supernets2 tests
  */
 contract SendData {
     /**

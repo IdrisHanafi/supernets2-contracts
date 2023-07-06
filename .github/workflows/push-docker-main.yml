@@ -33,5 +33,5 @@ jobs:
         run: |
           npm i
           npm run docker:contracts
-          docker image tag hermeznetwork/geth-supernets2.0-contracts hermeznetwork/geth-supernets2.0-contracts:main
-          docker image push hermeznetwork/geth-supernets2.0-contracts:main
+          docker image tag hermeznetwork/geth-supernets2-contracts hermeznetwork/geth-supernets2-contracts:main
+          docker image push hermeznetwork/geth-supernets2-contracts:main

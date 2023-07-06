@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-interface IBaseSupernets2dot0GlobalExitRoot {
+interface IBaseSupernets2GlobalExitRoot {
     /**
      * @dev Thrown when the caller is not the allowed contracts
      */

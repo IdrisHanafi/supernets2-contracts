@@ -2,11 +2,11 @@
 
 pragma solidity 0.8.17;
 
-interface ISupernets2dot0Bridge {
+interface ISupernets2Bridge {
     /**
-     * @dev Thrown when sender is not the Supernets2dot0 address
+     * @dev Thrown when sender is not the Supernets2 address
      */
-    error OnlySupernets2dot0();
+    error OnlySupernets2();
 
     /**
      * @dev Thrown when the destination network is invalid

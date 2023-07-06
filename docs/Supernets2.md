@@ -3,17 +3,17 @@ There will be a trusted sequencer, which is able to send transactions.
 Any user can force some transaction and the sequencer will have a timeout to add them in the queue.
 The sequenced state is deterministic and can be precalculated before it's actually verified by a zkProof.
 The aggregators will be able to verify the sequenced state with zkProofs and therefore make available the withdrawals from L2 network.
-To enter and exit of the L2 network will be used a Supernets2dot0Bridge smart contract that will be deployed in both networks.
+To enter and exit of the L2 network will be used a Supernets2Bridge smart contract that will be deployed in both networks.
 
 
 ## Functions
 ### constructor
 ```solidity
   function constructor(
-    contract ISupernets2dot0GlobalExitRoot _globalExitRootManager,
+    contract ISupernets2GlobalExitRoot _globalExitRootManager,
     contract IERC20Upgradeable _matic,
     contract IVerifierRollup _rollupVerifier,
-    contract ISupernets2dot0Bridge _bridgeAddress,
+    contract ISupernets2Bridge _bridgeAddress,
     uint64 _chainID,
     uint64 _forkID
   ) public
@@ -23,17 +23,17 @@ To enter and exit of the L2 network will be used a Supernets2dot0Bridge smart co
 #### Parameters:
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
-|`_globalExitRootManager` | contract ISupernets2dot0GlobalExitRoot | Global exit root manager address
+|`_globalExitRootManager` | contract ISupernets2GlobalExitRoot | Global exit root manager address
 |`_matic` | contract IERC20Upgradeable | MATIC token address
 |`_rollupVerifier` | contract IVerifierRollup | Rollup verifier address
-|`_bridgeAddress` | contract ISupernets2dot0Bridge | Bridge address
+|`_bridgeAddress` | contract ISupernets2Bridge | Bridge address
 |`_chainID` | uint64 | L2 chainID
 |`_forkID` | uint64 | Fork Id
 
 ### initialize
 ```solidity
   function initialize(
-    struct Supernets2dot0.InitializePackedParameters initializePackedParameters,
+    struct Supernets2.InitializePackedParameters initializePackedParameters,
     bytes32 genesisRoot,
     string _trustedSequencerURL,
     string _networkName
@@ -44,7 +44,7 @@ To enter and exit of the L2 network will be used a Supernets2dot0Bridge smart co
 #### Parameters:
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
-|`initializePackedParameters` | struct Supernets2dot0.InitializePackedParameters | Struct to save gas and avoid stack too deep errors
+|`initializePackedParameters` | struct Supernets2.InitializePackedParameters | Struct to save gas and avoid stack too deep errors
 |`genesisRoot` | bytes32 | Rollup genesis root
 |`_trustedSequencerURL` | string | Trusted sequencer URL
 |`_networkName` | string | L2 network name
@@ -52,7 +52,7 @@ To enter and exit of the L2 network will be used a Supernets2dot0Bridge smart co
 ### sequenceBatches
 ```solidity
   function sequenceBatches(
-    struct Supernets2dot0.BatchData[] batches,
+    struct Supernets2.BatchData[] batches,
     address l2Coinbase
   ) external
 ```
@@ -62,7 +62,7 @@ Allows a sequencer to send multiple batches
 #### Parameters:
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
-|`batches` | struct Supernets2dot0.BatchData[] | Struct array which holds the necessary data to append new batches to the sequence
+|`batches` | struct Supernets2.BatchData[] | Struct array which holds the necessary data to append new batches to the sequence
 |`l2Coinbase` | address | Address that will receive the fees from L2
 
 ### verifyBatches
@@ -214,7 +214,7 @@ with the same nonce
 ### sequenceForceBatches
 ```solidity
   function sequenceForceBatches(
-    struct Supernets2dot0.ForcedBatchData[] batches
+    struct Supernets2.ForcedBatchData[] batches
   ) external
 ```
 Allows anyone to sequence forced Batches if the trusted sequencer has not done so in the timeout period
@@ -223,7 +223,7 @@ Allows anyone to sequence forced Batches if the trusted sequencer has not done s
 #### Parameters:
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
-|`batches` | struct Supernets2dot0.ForcedBatchData[] | Struct array which holds the necessary data to append force batches
+|`batches` | struct Supernets2.ForcedBatchData[] | Struct array which holds the necessary data to append force batches
 
 ### setTrustedSequencer
 ```solidity
@@ -415,7 +415,7 @@ if it's possible to prove a different state root given the same batches
     bytes proof
   ) external
 ```
-Allows to halt the Supernets2dot0 if its possible to prove a different state root given the same batches
+Allows to halt the Supernets2 if its possible to prove a different state root given the same batches
 
 
 #### Parameters:
@@ -461,7 +461,7 @@ Internal function that proves a different state root given the same batches to v
     uint64 sequencedBatchNum
   ) external
 ```
-Function to activate emergency state, which also enables the emergency mode on both Supernets2dot0 and Supernets2dot0Bridge contracts
+Function to activate emergency state, which also enables the emergency mode on both Supernets2 and Supernets2Bridge contracts
 If not called by the owner must be provided a batcnNum that does not have been aggregated in a _HALT_AGGREGATION_TIMEOUT period
 
 
@@ -475,7 +475,7 @@ If not called by the owner must be provided a batcnNum that does not have been a
   function deactivateEmergencyState(
   ) external
 ```
-Function to deactivate emergency state on both Supernets2dot0 and Supernets2dot0Bridge contracts
+Function to deactivate emergency state on both Supernets2 and Supernets2Bridge contracts
 
 
 
@@ -484,7 +484,7 @@ Function to deactivate emergency state on both Supernets2dot0 and Supernets2dot0
   function _activateEmergencyState(
   ) internal
 ```
-Internal function to activate emergency state on both Supernets2dot0 and Supernets2dot0Bridge contracts
+Internal function to activate emergency state on both Supernets2 and Supernets2Bridge contracts
 
 
 
@@ -709,9 +709,9 @@ Emitted when is proved a different state given the same batches
 
 Emitted when the trusted aggregator overrides pending state
 
-### UpdateZkEVMVersion
+### UpdateSupernets2Version
 ```solidity
-  event UpdateZkEVMVersion(
+  event UpdateSupernets2Version(
   )
 ```
 

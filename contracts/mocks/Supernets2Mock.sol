@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.17;
 
-import "../Supernets2dot0.sol";
+import "../Supernets2.sol";
 
 /**
  * Contract responsible for managing the state and the updates of the L2 network
  * There will be sequencer, which are able to send transactions. That transactions will be stored in the contract.
  * The aggregators are forced to process and validate the sequencers transactions in the same order by using a verifier.
- * To enter and exit of the L2 network will be used a Supernets2dot0 Bridge smart contract
+ * To enter and exit of the L2 network will be used a Supernets2 Bridge smart contract
  */
-contract Supernets2dot0Mock is Supernets2dot0 {
+contract Supernets2Mock is Supernets2 {
     /**
      * @param _globalExitRootManager Global exit root manager address
      * @param _matic MATIC token address
@@ -18,18 +18,20 @@ contract Supernets2dot0Mock is Supernets2dot0 {
      * @param _chainID L2 chainID
      */
     constructor(
-        ISupernets2dot0GlobalExitRoot _globalExitRootManager,
+        ISupernets2GlobalExitRoot _globalExitRootManager,
         IERC20Upgradeable _matic,
         IVerifierRollup _rollupVerifier,
-        ISupernets2dot0Bridge _bridgeAddress,
+        ISupernets2Bridge _bridgeAddress,
+        ISupernets2DataCommittee _dataComiteeAddress,
         uint64 _chainID,
         uint64 _forkID
     )
-        Supernets2dot0(
+        Supernets2(
             _globalExitRootManager,
             _matic,
             _rollupVerifier,
             _bridgeAddress,
+            _dataComiteeAddress,
             _chainID,
             _forkID
         )
@@ -86,7 +88,7 @@ contract Supernets2dot0Mock is Supernets2dot0 {
             // Already consolidated pending states can be used aswell
             require(
                 pendingStateNum <= lastPendingState,
-                "Supernets2dot0::verifyBatches: pendingStateNum must be less or equal than lastPendingState"
+                "Supernets2::verifyBatches: pendingStateNum must be less or equal than lastPendingState"
             );
 
             // Check choosen pending state
@@ -100,27 +102,27 @@ contract Supernets2dot0Mock is Supernets2dot0 {
             // Check initNumBatch matches the pending state
             require(
                 initNumBatch == currentPendingState.lastVerifiedBatch,
-                "Supernets2dot0::verifyBatches: initNumBatch must match the pending state batch"
+                "Supernets2::verifyBatches: initNumBatch must match the pending state batch"
             );
         } else {
             // Use consolidated state
             oldStateRoot = batchNumToStateRoot[initNumBatch];
             require(
                 oldStateRoot != bytes32(0),
-                "Supernets2dot0::verifyBatches: initNumBatch state root does not exist"
+                "Supernets2::verifyBatches: initNumBatch state root does not exist"
             );
 
             // Check initNumBatch is inside the range
             require(
                 initNumBatch <= currentLastVerifiedBatch,
-                "Supernets2dot0::verifyBatches: initNumBatch must be less or equal than currentLastVerifiedBatch"
+                "Supernets2::verifyBatches: initNumBatch must be less or equal than currentLastVerifiedBatch"
             );
         }
 
         // Check final batch
         require(
             finalNewBatch > currentLastVerifiedBatch,
-            "Supernets2dot0::verifyBatches: finalNewBatch must be bigger than currentLastVerifiedBatch"
+            "Supernets2::verifyBatches: finalNewBatch must be bigger than currentLastVerifiedBatch"
         );
 
         // Get snark bytes
@@ -227,7 +229,7 @@ contract Supernets2dot0Mock is Supernets2dot0 {
             // Already consolidated pending states can be used aswell
             require(
                 pendingStateNum <= lastPendingState,
-                "Supernets2dot0::verifyBatches: pendingStateNum must be less or equal than lastPendingState"
+                "Supernets2::verifyBatches: pendingStateNum must be less or equal than lastPendingState"
             );
 
             // Check choosen pending state
@@ -241,27 +243,27 @@ contract Supernets2dot0Mock is Supernets2dot0 {
             // Check initNumBatch matches the pending state
             require(
                 initNumBatch == currentPendingState.lastVerifiedBatch,
-                "Supernets2dot0::verifyBatches: initNumBatch must match the pending state batch"
+                "Supernets2::verifyBatches: initNumBatch must match the pending state batch"
             );
         } else {
             // Use consolidated state
             oldStateRoot = batchNumToStateRoot[initNumBatch];
             require(
                 oldStateRoot != bytes32(0),
-                "Supernets2dot0::verifyBatches: initNumBatch state root does not exist"
+                "Supernets2::verifyBatches: initNumBatch state root does not exist"
             );
 
             // Check initNumBatch is inside the range
             require(
                 initNumBatch <= currentLastVerifiedBatch,
-                "Supernets2dot0::verifyBatches: initNumBatch must be less or equal than currentLastVerifiedBatch"
+                "Supernets2::verifyBatches: initNumBatch must be less or equal than currentLastVerifiedBatch"
             );
         }
 
         // Check final batch
         require(
             finalNewBatch > currentLastVerifiedBatch,
-            "Supernets2dot0::verifyBatches: finalNewBatch must be bigger than currentLastVerifiedBatch"
+            "Supernets2::verifyBatches: finalNewBatch must be bigger than currentLastVerifiedBatch"
         );
 
         // Get snark bytes
@@ -279,7 +281,7 @@ contract Supernets2dot0Mock is Supernets2dot0 {
         // // Verify proof
         // require(
         //     rollupVerifier.verifyProof(proofA, proofB, proofC, [inputSnark]),
-        //     "Supernets2dot0::verifyBatches: INVALID_PROOF"
+        //     "Supernets2::verifyBatches: INVALID_PROOF"
         // );
 
         // // Get MATIC reward

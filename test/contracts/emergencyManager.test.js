@@ -1,6 +1,10 @@
 const { expect } = require('chai');
 const { ethers, upgrades } = require('hardhat');
 
+const { contractUtils } = require('@0xpolygonhermez/zkevm-commonjs');
+
+const { calculateBatchHashData } = contractUtils;
+
 describe('Emergency mode test', () => {
     let deployer;
     let trustedAggregator;
@@ -8,10 +12,11 @@ describe('Emergency mode test', () => {
     let admin;
 
     let verifierContract;
-    let supernets2dot0BridgeContract;
-    let supernets2dot0Contract;
+    let supernets2BridgeContract;
+    let supernets2Contract;
+    let supernets2DataCommitteeContract;
     let maticTokenContract;
-    let supernets2dot0GlobalExitRoot;
+    let supernets2GlobalExitRoot;
 
     const maticTokenName = 'Matic Token';
     const maticTokenSymbol = 'MATIC';
@@ -20,9 +25,9 @@ describe('Emergency mode test', () => {
     const genesisRoot = '0x0000000000000000000000000000000000000000000000000000000000000001';
 
     const networkIDMainnet = 0;
-    const urlSequencer = 'http://zkevm-json-rpc:8123';
+    const urlSequencer = 'http://supernets2-json-rpc:8123';
     const chainID = 1000;
-    const networkName = 'zkevm';
+    const networkName = 'supernets2';
     const version = '0.0.1';
     const pendingStateTimeoutDefault = 10;
     const trustedAggregatorTimeoutDefault = 10;
@@ -60,43 +65,56 @@ describe('Emergency mode test', () => {
         }
 
         const nonceProxyBridge = Number((await ethers.provider.getTransactionCount(deployer.address))) + (firstDeployment ? 3 : 2);
-        const nonceProxyZkevm = nonceProxyBridge + 2; // Always have to redeploy impl since the supernets2dot0GlobalExitRoot address changes
+        const nonceProxyCommittee = nonceProxyBridge + 1;
+        // Always have to redeploy impl since the supernets2GlobalExitRoot address changes
+        const nonceProxySupernets2 = nonceProxyCommittee + 2;
 
         const precalculateBridgeAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyBridge });
-        const precalculateZkevmAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyZkevm });
+        const precalculateCommitteeAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyCommittee });
+        const precalculateSupernets2Address = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxySupernets2 });
         firstDeployment = false;
 
-        const Supernets2dot0GlobalExitRootFactory = await ethers.getContractFactory('Supernets2dot0GlobalExitRoot');
-        supernets2dot0GlobalExitRoot = await upgrades.deployProxy(Supernets2dot0GlobalExitRootFactory, [], {
+        const Supernets2GlobalExitRootFactory = await ethers.getContractFactory('Supernets2GlobalExitRoot');
+        supernets2GlobalExitRoot = await upgrades.deployProxy(Supernets2GlobalExitRootFactory, [], {
             initializer: false,
-            constructorArgs: [precalculateZkevmAddress, precalculateBridgeAddress],
+            constructorArgs: [precalculateSupernets2Address, precalculateBridgeAddress],
             unsafeAllow: ['constructor', 'state-variable-immutable'],
         });
 
-        // deploy Supernets2dot0Bridge
-        const supernets2dot0BridgeFactory = await ethers.getContractFactory('Supernets2dot0Bridge');
-        supernets2dot0BridgeContract = await upgrades.deployProxy(supernets2dot0BridgeFactory, [], { initializer: false });
+        // deploy Supernets2Bridge
+        const supernets2BridgeFactory = await ethers.getContractFactory('Supernets2Bridge');
+        supernets2BridgeContract = await upgrades.deployProxy(supernets2BridgeFactory, [], { initializer: false });
 
-        // deploy Supernets2dot0Mock
-        const Supernets2dot0Factory = await ethers.getContractFactory('Supernets2dot0Mock');
-        supernets2dot0Contract = await upgrades.deployProxy(Supernets2dot0Factory, [], {
+        // deploy Supernets2DataCommittee
+        const supernets2DataCommitteeFactory = await ethers.getContractFactory('Supernets2DataCommittee');
+        supernets2DataCommitteeContract = await upgrades.deployProxy(
+            supernets2DataCommitteeFactory,
+            [],
+            { initializer: false },
+        );
+
+        // deploy Supernets2Mock
+        const Supernets2Factory = await ethers.getContractFactory('Supernets2Mock');
+        supernets2Contract = await upgrades.deployProxy(Supernets2Factory, [], {
             initializer: false,
             constructorArgs: [
-                supernets2dot0GlobalExitRoot.address,
+                supernets2GlobalExitRoot.address,
                 maticTokenContract.address,
                 verifierContract.address,
-                supernets2dot0BridgeContract.address,
+                supernets2BridgeContract.address,
+                supernets2DataCommitteeContract.address,
                 chainID,
                 0,
             ],
             unsafeAllow: ['constructor', 'state-variable-immutable'],
         });
 
-        expect(precalculateBridgeAddress).to.be.equal(supernets2dot0BridgeContract.address);
-        expect(precalculateZkevmAddress).to.be.equal(supernets2dot0Contract.address);
+        expect(precalculateBridgeAddress).to.be.equal(supernets2BridgeContract.address);
+        expect(precalculateCommitteeAddress).to.be.equal(supernets2DataCommitteeContract.address);
+        expect(precalculateSupernets2Address).to.be.equal(supernets2Contract.address);
 
-        await supernets2dot0BridgeContract.initialize(networkIDMainnet, supernets2dot0GlobalExitRoot.address, supernets2dot0Contract.address);
-        await supernets2dot0Contract.initialize(
+        await supernets2BridgeContract.initialize(networkIDMainnet, supernets2GlobalExitRoot.address, supernets2Contract.address);
+        await supernets2Contract.initialize(
             {
                 admin: admin.address,
                 trustedSequencer: trustedSequencer.address,
@@ -113,40 +131,55 @@ describe('Emergency mode test', () => {
         // fund sequencer address with Matic tokens
         await maticTokenContract.transfer(trustedSequencer.address, ethers.utils.parseEther('1000'));
 
+        // init data committee
+        await supernets2DataCommitteeContract.initialize();
+        const expectedHash = ethers.utils.solidityKeccak256(['bytes'], [[]]);
+        await expect(supernets2DataCommitteeContract.connect(deployer)
+            .setupCommittee(0, [], []))
+            .to.emit(supernets2DataCommitteeContract, 'CommitteeUpdated')
+            .withArgs(expectedHash);
+
         // Activate force batches
         await expect(
-            supernets2dot0Contract.connect(admin).activateForceBatches(),
-        ).to.emit(supernets2dot0Contract, 'ActivateForceBatches');
+            supernets2Contract.connect(admin).activateForceBatches(),
+        ).to.emit(supernets2Contract, 'ActivateForceBatches');
     });
 
     it('should activate emergency mode', async () => {
         // Check isEmergencyState
-        expect(await supernets2dot0Contract.isEmergencyState()).to.be.equal(false);
-        expect(await supernets2dot0BridgeContract.isEmergencyState()).to.be.equal(false);
+        expect(await supernets2Contract.isEmergencyState()).to.be.equal(false);
+        expect(await supernets2BridgeContract.isEmergencyState()).to.be.equal(false);
 
-        await expect(supernets2dot0Contract.connect(admin).deactivateEmergencyState())
+        await expect(supernets2Contract.connect(admin).deactivateEmergencyState())
             .to.be.revertedWith('OnlyEmergencyState');
 
         // Set isEmergencyState
-        await expect(supernets2dot0Contract.connect(admin).activateEmergencyState(1))
+        await expect(supernets2Contract.connect(admin).activateEmergencyState(1))
             .to.be.revertedWith('BatchNotSequencedOrNotSequenceEnd');
 
-        await expect(supernets2dot0BridgeContract.connect(deployer).activateEmergencyState())
-            .to.be.revertedWith('OnlySupernets2dot0');
+        await expect(supernets2BridgeContract.connect(deployer).activateEmergencyState())
+            .to.be.revertedWith('OnlySupernets2');
 
-        await expect(supernets2dot0Contract.activateEmergencyState(0))
-            .to.emit(supernets2dot0Contract, 'EmergencyStateActivated')
-            .to.emit(supernets2dot0BridgeContract, 'EmergencyStateActivated');
+        await expect(supernets2Contract.activateEmergencyState(0))
+            .to.emit(supernets2Contract, 'EmergencyStateActivated')
+            .to.emit(supernets2BridgeContract, 'EmergencyStateActivated');
 
-        expect(await supernets2dot0Contract.isEmergencyState()).to.be.equal(true);
-        expect(await supernets2dot0BridgeContract.isEmergencyState()).to.be.equal(true);
+        expect(await supernets2Contract.isEmergencyState()).to.be.equal(true);
+        expect(await supernets2BridgeContract.isEmergencyState()).to.be.equal(true);
 
         // Once in emergency state no sequenceBatches/forceBatches can be done
         const l2txData = '0x123456';
-        const maticAmount = await supernets2dot0Contract.batchFee();
+        const transactionsHash = calculateBatchHashData(l2txData);
+        const maticAmount = await supernets2Contract.batchFee();
         const currentTimestamp = (await ethers.provider.getBlock()).timestamp;
 
         const sequence = {
+            transactionsHash,
+            globalExitRoot: ethers.constants.HashZero,
+            timestamp: ethers.BigNumber.from(currentTimestamp),
+            minForcedTimestamp: 0,
+        };
+        const forcedSequence = {
             transactions: l2txData,
             globalExitRoot: ethers.constants.HashZero,
             timestamp: ethers.BigNumber.from(currentTimestamp),
@@ -154,30 +187,30 @@ describe('Emergency mode test', () => {
         };
 
         // revert because emergency state
-        await expect(supernets2dot0Contract.sequenceBatches([sequence], deployer.address))
+        await expect(supernets2Contract.sequenceBatches([sequence], deployer.address, []))
             .to.be.revertedWith('OnlyNotEmergencyState');
 
         // revert because emergency state
-        await expect(supernets2dot0Contract.sequenceForceBatches([sequence]))
+        await expect(supernets2Contract.sequenceForceBatches([forcedSequence]))
             .to.be.revertedWith('OnlyNotEmergencyState');
 
         // revert because emergency state
-        await expect(supernets2dot0Contract.forceBatch(l2txData, maticAmount))
+        await expect(supernets2Contract.forceBatch(l2txData, maticAmount))
             .to.be.revertedWith('OnlyNotEmergencyState');
 
         // revert because emergency state
-        await expect(supernets2dot0Contract.consolidatePendingState(0))
+        await expect(supernets2Contract.consolidatePendingState(0))
             .to.be.revertedWith('OnlyNotEmergencyState');
 
         // trustedAggregator forge the batch
         const newLocalExitRoot = '0x0000000000000000000000000000000000000000000000000000000000000001';
         const newStateRoot = '0x0000000000000000000000000000000000000000000000000000000000000001';
-        const numBatch = (await supernets2dot0Contract.lastVerifiedBatch()).toNumber() + 1;
+        const numBatch = (await supernets2Contract.lastVerifiedBatch()).toNumber() + 1;
         const zkProofFFlonk = '0x';
         const pendingStateNum = 0;
 
         await expect(
-            supernets2dot0Contract.connect(trustedAggregator).verifyBatches(
+            supernets2Contract.connect(trustedAggregator).verifyBatches(
                 pendingStateNum,
                 numBatch - 1,
                 numBatch,
@@ -187,13 +220,13 @@ describe('Emergency mode test', () => {
             ),
         ).to.be.revertedWith('OnlyNotEmergencyState');
 
-        // Check Supernets2dot0Bridge no Supernets2dot0Bridge is in emergency state also
+        // Check Supernets2Bridge no Supernets2Bridge is in emergency state also
         const tokenAddress = ethers.constants.AddressZero;
         const amount = ethers.utils.parseEther('10');
         const destinationNetwork = 1;
         const destinationAddress = deployer.address;
 
-        await expect(supernets2dot0BridgeContract.bridgeAsset(
+        await expect(supernets2BridgeContract.bridgeAsset(
             destinationNetwork,
             destinationAddress,
             amount,
@@ -202,7 +235,7 @@ describe('Emergency mode test', () => {
             '0x',
         )).to.be.revertedWith('OnlyNotEmergencyState');
 
-        await expect(supernets2dot0BridgeContract.bridgeMessage(
+        await expect(supernets2BridgeContract.bridgeMessage(
             destinationNetwork,
             destinationAddress,
             true,
@@ -213,7 +246,7 @@ describe('Emergency mode test', () => {
         const index = 0;
         const root = ethers.constants.HashZero;
 
-        await expect(supernets2dot0BridgeContract.claimAsset(
+        await expect(supernets2BridgeContract.claimAsset(
             proof,
             index,
             root,
@@ -226,7 +259,7 @@ describe('Emergency mode test', () => {
             '0x',
         )).to.be.revertedWith('OnlyNotEmergencyState');
 
-        await expect(supernets2dot0BridgeContract.claimMessage(
+        await expect(supernets2BridgeContract.claimMessage(
             proof,
             index,
             root,
@@ -240,35 +273,35 @@ describe('Emergency mode test', () => {
         )).to.be.revertedWith('OnlyNotEmergencyState');
 
         // Emergency council should deactivate emergency mode
-        await expect(supernets2dot0Contract.activateEmergencyState(0))
+        await expect(supernets2Contract.activateEmergencyState(0))
             .to.be.revertedWith('OnlyNotEmergencyState');
 
-        await expect(supernets2dot0BridgeContract.connect(deployer).deactivateEmergencyState())
-            .to.be.revertedWith('OnlySupernets2dot0');
+        await expect(supernets2BridgeContract.connect(deployer).deactivateEmergencyState())
+            .to.be.revertedWith('OnlySupernets2');
 
-        await expect(supernets2dot0Contract.deactivateEmergencyState())
+        await expect(supernets2Contract.deactivateEmergencyState())
             .to.be.revertedWith('OnlyAdmin');
 
-        await expect(supernets2dot0Contract.connect(admin).deactivateEmergencyState())
-            .to.emit(supernets2dot0Contract, 'EmergencyStateDeactivated')
-            .to.emit(supernets2dot0BridgeContract, 'EmergencyStateDeactivated');
+        await expect(supernets2Contract.connect(admin).deactivateEmergencyState())
+            .to.emit(supernets2Contract, 'EmergencyStateDeactivated')
+            .to.emit(supernets2BridgeContract, 'EmergencyStateDeactivated');
 
         // Check isEmergencyState
-        expect(await supernets2dot0Contract.isEmergencyState()).to.be.equal(false);
-        expect(await supernets2dot0BridgeContract.isEmergencyState()).to.be.equal(false);
+        expect(await supernets2Contract.isEmergencyState()).to.be.equal(false);
+        expect(await supernets2BridgeContract.isEmergencyState()).to.be.equal(false);
 
         /*
          * Continue normal flow
          * Approve tokens
          */
         await expect(
-            maticTokenContract.connect(trustedSequencer).approve(supernets2dot0Contract.address, maticAmount),
+            maticTokenContract.connect(trustedSequencer).approve(supernets2Contract.address, maticAmount),
         ).to.emit(maticTokenContract, 'Approval');
 
-        const lastBatchSequenced = await supernets2dot0Contract.lastBatchSequenced();
+        const lastBatchSequenced = await supernets2Contract.lastBatchSequenced();
         // Sequence Batches
-        await expect(supernets2dot0Contract.connect(trustedSequencer).sequenceBatches([sequence], trustedSequencer.address))
-            .to.emit(supernets2dot0Contract, 'SequenceBatches')
+        await expect(supernets2Contract.connect(trustedSequencer).sequenceBatches([sequence], trustedSequencer.address, []))
+            .to.emit(supernets2Contract, 'SequenceBatches')
             .withArgs(lastBatchSequenced + 1);
 
         // trustedAggregator forge the batch
@@ -279,7 +312,7 @@ describe('Emergency mode test', () => {
 
         // Verify batch
         await expect(
-            supernets2dot0Contract.connect(trustedAggregator).verifyBatches(
+            supernets2Contract.connect(trustedAggregator).verifyBatches(
                 pendingStateNum,
                 numBatch - 1,
                 numBatch,
@@ -287,7 +320,7 @@ describe('Emergency mode test', () => {
                 newStateRoot,
                 zkProofFFlonk,
             ),
-        ).to.emit(supernets2dot0Contract, 'VerifyBatches')
+        ).to.emit(supernets2Contract, 'VerifyBatches')
             .withArgs(numBatch, newStateRoot, trustedAggregator.address);
 
         const finalAggregatorMatic = await maticTokenContract.balanceOf(
@@ -301,7 +334,7 @@ describe('Emergency mode test', () => {
         const finalPendingStateNum = 1;
 
         await expect(
-            supernets2dot0Contract.connect(trustedAggregator).proveNonDeterministicPendingState(
+            supernets2Contract.connect(trustedAggregator).proveNonDeterministicPendingState(
                 pendingStateNum,
                 finalPendingStateNum,
                 numBatch - 1,
@@ -313,7 +346,7 @@ describe('Emergency mode test', () => {
         ).to.be.revertedWith('FinalNumBatchDoesNotMatchPendingState');
 
         await expect(
-            supernets2dot0Contract.connect(trustedAggregator).proveNonDeterministicPendingState(
+            supernets2Contract.connect(trustedAggregator).proveNonDeterministicPendingState(
                 pendingStateNum,
                 finalPendingStateNum,
                 numBatch - 1,
@@ -327,7 +360,7 @@ describe('Emergency mode test', () => {
         const newStateRootDistinct = '0x0000000000000000000000000000000000000000000000000000000000000002';
 
         await expect(
-            supernets2dot0Contract.proveNonDeterministicPendingState(
+            supernets2Contract.proveNonDeterministicPendingState(
                 pendingStateNum,
                 finalPendingStateNum,
                 numBatch - 1,
@@ -336,12 +369,12 @@ describe('Emergency mode test', () => {
                 newStateRootDistinct,
                 zkProofFFlonk,
             ),
-        ).to.emit(supernets2dot0Contract, 'ProveNonDeterministicPendingState').withArgs(newStateRoot, newStateRootDistinct)
-            .to.emit(supernets2dot0Contract, 'EmergencyStateActivated')
-            .to.emit(supernets2dot0BridgeContract, 'EmergencyStateActivated');
+        ).to.emit(supernets2Contract, 'ProveNonDeterministicPendingState').withArgs(newStateRoot, newStateRootDistinct)
+            .to.emit(supernets2Contract, 'EmergencyStateActivated')
+            .to.emit(supernets2BridgeContract, 'EmergencyStateActivated');
 
         // Check emergency state is active
-        expect(await supernets2dot0Contract.isEmergencyState()).to.be.equal(true);
-        expect(await supernets2dot0BridgeContract.isEmergencyState()).to.be.equal(true);
+        expect(await supernets2Contract.isEmergencyState()).to.be.equal(true);
+        expect(await supernets2BridgeContract.isEmergencyState()).to.be.equal(true);
     });
 });

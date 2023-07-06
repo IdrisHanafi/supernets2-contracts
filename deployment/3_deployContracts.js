@@ -48,11 +48,11 @@ async function main() {
         'trustedAggregatorTimeout',
         'pendingStateTimeout',
         'forkID',
-        'supernets2dot0Owner',
+        'supernets2Owner',
         'timelockAddress',
         'minDelayTimelock',
         'salt',
-        'supernets2dot0DeployerAddress',
+        'supernets2DeployerAddress',
         'maticTokenAddress',
         'setupEmptyCommittee',
         'committeeTimelock',
@@ -76,11 +76,11 @@ async function main() {
         trustedAggregatorTimeout,
         pendingStateTimeout,
         forkID,
-        supernets2dot0Owner,
+        supernets2Owner,
         timelockAddress,
         minDelayTimelock,
         salt,
-        supernets2dot0DeployerAddress,
+        supernets2DeployerAddress,
         maticTokenAddress,
         setupEmptyCommittee,
         committeeTimelock,
@@ -124,15 +124,15 @@ async function main() {
         [deployer] = (await ethers.getSigners());
     }
 
-    // Load supernets2dot0 deployer
-    const Supernets2dot0DeployerFactory = await ethers.getContractFactory('Supernets2dot0Deployer', deployer);
-    const supernets2dot0DeployerContract = Supernets2dot0DeployerFactory.attach(supernets2dot0DeployerAddress);
+    // Load supernets2 deployer
+    const Supernets2DeployerFactory = await ethers.getContractFactory('Supernets2Deployer', deployer);
+    const supernets2DeployerContract = Supernets2DeployerFactory.attach(supernets2DeployerAddress);
 
     // check deployer is the owner of the deployer
-    if (await deployer.provider.getCode(supernets2dot0DeployerContract.address) === '0x') {
-        throw new Error('supernets2dot0 deployer contract is not deployed');
+    if (await deployer.provider.getCode(supernets2DeployerContract.address) === '0x') {
+        throw new Error('supernets2 deployer contract is not deployed');
     }
-    expect(deployer.address).to.be.equal(await supernets2dot0DeployerContract.owner());
+    expect(deployer.address).to.be.equal(await supernets2DeployerContract.owner());
 
     let verifierContract;
     if (!ongoingDeployment.verifierContract) {
@@ -167,7 +167,7 @@ async function main() {
     const deployTransactionAdmin = (proxyAdminFactory.getDeployTransaction()).data;
     const dataCallAdmin = proxyAdminFactory.interface.encodeFunctionData('transferOwnership', [deployer.address]);
     const [proxyAdminAddress, isProxyAdminDeployed] = await create2Deployment(
-        supernets2dot0DeployerContract,
+        supernets2DeployerContract,
         salt,
         deployTransactionAdmin,
         dataCallAdmin,
@@ -182,14 +182,14 @@ async function main() {
         console.log('Proxy admin was already deployed to:', proxyAdminAddress);
     }
 
-    // Deploy implementation Supernets2dot0Bridge
-    const supernets2dot0BridgeFactory = await ethers.getContractFactory('Supernets2dot0Bridge', deployer);
-    const deployTransactionBridge = (supernets2dot0BridgeFactory.getDeployTransaction()).data;
+    // Deploy implementation Supernets2Bridge
+    const supernets2BridgeFactory = await ethers.getContractFactory('Supernets2Bridge', deployer);
+    const deployTransactionBridge = (supernets2BridgeFactory.getDeployTransaction()).data;
     const dataCallNull = null;
     // Mandatory to override the gasLimit since the estimation with create are mess up D:
     const overrideGasLimit = ethers.BigNumber.from(5500000);
     const [bridgeImplementationAddress, isBridgeImplDeployed] = await create2Deployment(
-        supernets2dot0DeployerContract,
+        supernets2DeployerContract,
         salt,
         deployTransactionBridge,
         dataCallNull,
@@ -224,97 +224,97 @@ async function main() {
     const nonceDelta = 4 + (setupEmptyCommittee ? 1 : 0);
     const nonceProxyGlobalExitRoot = Number((await ethers.provider.getTransactionCount(deployer.address)))
         + nonceDelta;
-    // nonceProxySupernets2dot0 :Nonce globalExitRoot + 1 (proxy globalExitRoot) + 1 (impl supernets) = +2
-    const nonceProxySupernets2dot0 = nonceProxyGlobalExitRoot + 2;
+    // nonceProxySupernets2 :Nonce globalExitRoot + 1 (proxy globalExitRoot) + 1 (impl supernets) = +2
+    const nonceProxySupernets2 = nonceProxyGlobalExitRoot + 2;
 
     let precalculateGLobalExitRootAddress; let
-        precalculateSupernets2dot0Address;
+        precalculateSupernets2Address;
 
     // Check if the contract is already deployed
-    if (ongoingDeployment.supernets2dot0GlobalExitRoot && ongoingDeployment.supernets2dot0Contract) {
-        precalculateGLobalExitRootAddress = ongoingDeployment.supernets2dot0GlobalExitRoot;
-        precalculateSupernets2dot0Address = ongoingDeployment.supernets2dot0Contract;
+    if (ongoingDeployment.supernets2GlobalExitRoot && ongoingDeployment.supernets2Contract) {
+        precalculateGLobalExitRootAddress = ongoingDeployment.supernets2GlobalExitRoot;
+        precalculateSupernets2Address = ongoingDeployment.supernets2Contract;
     } else {
         // If both are not deployed, it's better to deploy them both again
-        delete ongoingDeployment.supernets2dot0GlobalExitRoot;
-        delete ongoingDeployment.supernets2dot0Contract;
+        delete ongoingDeployment.supernets2GlobalExitRoot;
+        delete ongoingDeployment.supernets2Contract;
         fs.writeFileSync(pathOngoingDeploymentJson, JSON.stringify(ongoingDeployment, null, 1));
 
         // Contracts are not deployed, normal deployment
         precalculateGLobalExitRootAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyGlobalExitRoot });
-        precalculateSupernets2dot0Address = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxySupernets2dot0 });
+        precalculateSupernets2Address = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxySupernets2 });
     }
 
-    const dataCallProxy = supernets2dot0BridgeFactory.interface.encodeFunctionData(
+    const dataCallProxy = supernets2BridgeFactory.interface.encodeFunctionData(
         'initialize',
         [
             networkIDMainnet,
             precalculateGLobalExitRootAddress,
-            precalculateSupernets2dot0Address,
+            precalculateSupernets2Address,
         ],
     );
     const [proxyBridgeAddress, isBridgeProxyDeployed] = await create2Deployment(
-        supernets2dot0DeployerContract,
+        supernets2DeployerContract,
         salt,
         deployTransactionProxy,
         dataCallProxy,
         deployer,
     );
-    const supernets2dot0BridgeContract = supernets2dot0BridgeFactory.attach(proxyBridgeAddress);
+    const supernets2BridgeContract = supernets2BridgeFactory.attach(proxyBridgeAddress);
 
     if (isBridgeProxyDeployed) {
         console.log('#######################\n');
-        console.log('Supernets2dot0Bridge deployed to:', supernets2dot0BridgeContract.address);
+        console.log('Supernets2Bridge deployed to:', supernets2BridgeContract.address);
     } else {
         console.log('#######################\n');
-        console.log('Supernets2dot0Bridge was already deployed to:', supernets2dot0BridgeContract.address);
+        console.log('Supernets2Bridge was already deployed to:', supernets2BridgeContract.address);
 
         // If it was already deployed, check that the initialized calldata matches the actual deployment
-        expect(precalculateGLobalExitRootAddress).to.be.equal(await supernets2dot0BridgeContract.globalExitRootManager());
-        expect(precalculateSupernets2dot0Address).to.be.equal(await supernets2dot0BridgeContract.supernets2dot0address());
+        expect(precalculateGLobalExitRootAddress).to.be.equal(await supernets2BridgeContract.globalExitRootManager());
+        expect(precalculateSupernets2Address).to.be.equal(await supernets2BridgeContract.supernets2address());
     }
 
     console.log('\n#######################');
-    console.log('#####    Checks Supernets2dot0Bridge   #####');
+    console.log('#####    Checks Supernets2Bridge   #####');
     console.log('#######################');
-    console.log('Supernets2dot0GlobalExitRootAddress:', await supernets2dot0BridgeContract.globalExitRootManager());
-    console.log('networkID:', await supernets2dot0BridgeContract.networkID());
-    console.log('supernets2dot0address:', await supernets2dot0BridgeContract.supernets2dot0address());
+    console.log('Supernets2GlobalExitRootAddress:', await supernets2BridgeContract.globalExitRootManager());
+    console.log('networkID:', await supernets2BridgeContract.networkID());
+    console.log('supernets2address:', await supernets2BridgeContract.supernets2address());
 
     // Import OZ manifest the deployed contracts, its enough to import just the proxy, the rest are imported automatically (admin/impl)
-    await upgrades.forceImport(proxyBridgeAddress, supernets2dot0BridgeFactory, 'transparent');
+    await upgrades.forceImport(proxyBridgeAddress, supernets2BridgeFactory, 'transparent');
 
     /*
      * Deployment Data Committee
      */
-    let supernets2dot0DataCommitteeContract;
-    const Supernets2dot0DataCommitteeContractFactory = await ethers.getContractFactory('Supernets2dot0DataCommittee', deployer);
+    let supernets2DataCommitteeContract;
+    const Supernets2DataCommitteeContractFactory = await ethers.getContractFactory('Supernets2DataCommittee', deployer);
     for (let i = 0; i < attemptsDeployProxy; i++) {
         try {
-            supernets2dot0DataCommitteeContract = await upgrades.deployProxy(
-                Supernets2dot0DataCommitteeContractFactory,
+            supernets2DataCommitteeContract = await upgrades.deployProxy(
+                Supernets2DataCommitteeContractFactory,
                 [],
             );
             break;
         } catch (error) {
             console.log(`attempt ${i}`);
-            console.log('upgrades.deployProxy of supernets2dot0DataCommitteeContract ', error.message);
+            console.log('upgrades.deployProxy of supernets2DataCommitteeContract ', error.message);
         }
 
         // reach limits of attempts
         if (i + 1 === attemptsDeployProxy) {
-            throw new Error('supernets2dot0DataCommitteeContract contract has not been deployed');
+            throw new Error('supernets2DataCommitteeContract contract has not been deployed');
         }
     }
 
     console.log('#######################\n');
-    console.log('supernets2dot0DataCommittee deployed to:', supernets2dot0DataCommitteeContract.address);
+    console.log('supernets2DataCommittee deployed to:', supernets2DataCommitteeContract.address);
 
     if (setupEmptyCommittee) {
         const expectedHash = ethers.utils.solidityKeccak256(['bytes'], [[]]);
-        await expect(supernets2dot0DataCommitteeContract.connect(deployer)
+        await expect(supernets2DataCommitteeContract.connect(deployer)
             .setupCommittee(0, [], []))
-            .to.emit(supernets2dot0DataCommitteeContract, 'CommitteeUpdated')
+            .to.emit(supernets2DataCommitteeContract, 'CommitteeUpdated')
             .withArgs(expectedHash);
         console.log('Empty committee seted up');
     }
@@ -322,64 +322,64 @@ async function main() {
     /*
      *Deployment Global exit root manager
      */
-    let supernets2dot0GlobalExitRoot;
-    const Supernets2dot0GlobalExitRootFactory = await ethers.getContractFactory('Supernets2dot0GlobalExitRoot', deployer);
-    if (!ongoingDeployment.supernets2dot0GlobalExitRoot) {
+    let supernets2GlobalExitRoot;
+    const Supernets2GlobalExitRootFactory = await ethers.getContractFactory('Supernets2GlobalExitRoot', deployer);
+    if (!ongoingDeployment.supernets2GlobalExitRoot) {
         for (let i = 0; i < attemptsDeployProxy; i++) {
             try {
-                supernets2dot0GlobalExitRoot = await upgrades.deployProxy(Supernets2dot0GlobalExitRootFactory, [], {
+                supernets2GlobalExitRoot = await upgrades.deployProxy(Supernets2GlobalExitRootFactory, [], {
                     initializer: false,
-                    constructorArgs: [precalculateSupernets2dot0Address, proxyBridgeAddress],
+                    constructorArgs: [precalculateSupernets2Address, proxyBridgeAddress],
                     unsafeAllow: ['constructor', 'state-variable-immutable'],
                 });
                 break;
             } catch (error) {
                 console.log(`attempt ${i}`);
-                console.log('upgrades.deployProxy of supernets2dot0GlobalExitRoot ', error.message);
+                console.log('upgrades.deployProxy of supernets2GlobalExitRoot ', error.message);
             }
 
             // reach limits of attempts
             if (i + 1 === attemptsDeployProxy) {
-                throw new Error('supernets2dot0GlobalExitRoot contract has not been deployed');
+                throw new Error('supernets2GlobalExitRoot contract has not been deployed');
             }
         }
 
-        expect(precalculateGLobalExitRootAddress).to.be.equal(supernets2dot0GlobalExitRoot.address);
+        expect(precalculateGLobalExitRootAddress).to.be.equal(supernets2GlobalExitRoot.address);
 
         console.log('#######################\n');
-        console.log('supernets2dot0GlobalExitRoot deployed to:', supernets2dot0GlobalExitRoot.address);
+        console.log('supernets2GlobalExitRoot deployed to:', supernets2GlobalExitRoot.address);
 
         // save an ongoing deployment
-        ongoingDeployment.supernets2dot0GlobalExitRoot = supernets2dot0GlobalExitRoot.address;
+        ongoingDeployment.supernets2GlobalExitRoot = supernets2GlobalExitRoot.address;
         fs.writeFileSync(pathOngoingDeploymentJson, JSON.stringify(ongoingDeployment, null, 1));
     } else {
         // sanity check
-        expect(precalculateGLobalExitRootAddress).to.be.equal(supernets2dot0GlobalExitRoot.address);
+        expect(precalculateGLobalExitRootAddress).to.be.equal(supernets2GlobalExitRoot.address);
         // Expect the precalculate address matches de onogin deployment
-        supernets2dot0GlobalExitRoot = Supernets2dot0GlobalExitRootFactory.attach(ongoingDeployment.supernets2dot0GlobalExitRoot);
+        supernets2GlobalExitRoot = Supernets2GlobalExitRootFactory.attach(ongoingDeployment.supernets2GlobalExitRoot);
 
         console.log('#######################\n');
-        console.log('supernets2dot0GlobalExitRoot already deployed on: ', ongoingDeployment.supernets2dot0GlobalExitRoot);
+        console.log('supernets2GlobalExitRoot already deployed on: ', ongoingDeployment.supernets2GlobalExitRoot);
 
         // Import OZ manifest the deployed contracts, its enough to import just the proyx, the rest are imported automatically (admin/impl)
-        await upgrades.forceImport(ongoingDeployment.supernets2dot0GlobalExitRoot, Supernets2dot0GlobalExitRootFactory, 'transparent');
+        await upgrades.forceImport(ongoingDeployment.supernets2GlobalExitRoot, Supernets2GlobalExitRootFactory, 'transparent');
 
         // Check against current deployment
-        expect(supernets2dot0BridgeContract.address).to.be.equal(await supernets2dot0BridgeContract.bridgeAddress());
-        expect(precalculateSupernets2dot0Address).to.be.equal(await supernets2dot0BridgeContract.rollupAddress());
+        expect(supernets2BridgeContract.address).to.be.equal(await supernets2BridgeContract.bridgeAddress());
+        expect(precalculateSupernets2Address).to.be.equal(await supernets2BridgeContract.rollupAddress());
     }
 
-    // deploy Supernets2dot0M
+    // deploy Supernets2M
     const genesisRootHex = genesis.root;
 
     console.log('\n#######################');
-    console.log('##### Deployment Polygon ZK-EVM #####');
+    console.log('##### Deployment Supernets2 #####');
     console.log('#######################');
     console.log('deployer:', deployer.address);
-    console.log('Supernets2dot0GlobalExitRootAddress:', supernets2dot0GlobalExitRoot.address);
+    console.log('Supernets2GlobalExitRootAddress:', supernets2GlobalExitRoot.address);
     console.log('maticTokenAddress:', maticTokenAddress);
     console.log('verifierAddress:', verifierContract.address);
-    console.log('supernets2dot0BridgeContract:', supernets2dot0BridgeContract.address);
+    console.log('supernets2BridgeContract:', supernets2BridgeContract.address);
 
     console.log('admin:', admin);
     console.log('chainID:', chainID);
@@ -393,15 +393,15 @@ async function main() {
     console.log('networkName:', networkName);
     console.log('forkID:', forkID);
 
-    const Supernets2dot0Factory = await ethers.getContractFactory('Supernets2dot0', deployer);
+    const Supernets2Factory = await ethers.getContractFactory('Supernets2', deployer);
 
-    let supernets2dot0Contract;
+    let supernets2Contract;
     let deploymentBlockNumber;
-    if (!ongoingDeployment.supernets2dot0Contract) {
+    if (!ongoingDeployment.supernets2Contract) {
         for (let i = 0; i < attemptsDeployProxy; i++) {
             try {
-                supernets2dot0Contract = await upgrades.deployProxy(
-                    Supernets2dot0Factory,
+                supernets2Contract = await upgrades.deployProxy(
+                    Supernets2Factory,
                     [
                         {
                             admin,
@@ -417,11 +417,11 @@ async function main() {
                     ],
                     {
                         constructorArgs: [
-                            supernets2dot0GlobalExitRoot.address,
+                            supernets2GlobalExitRoot.address,
                             maticTokenAddress,
                             verifierContract.address,
-                            supernets2dot0BridgeContract.address,
-                            supernets2dot0DataCommitteeContract.address,
+                            supernets2BridgeContract.address,
+                            supernets2DataCommitteeContract.address,
                             chainID,
                             forkID,
                         ],
@@ -431,82 +431,82 @@ async function main() {
                 break;
             } catch (error) {
                 console.log(`attempt ${i}`);
-                console.log('upgrades.deployProxy of supernets2dot0Contract ', error.message);
+                console.log('upgrades.deployProxy of supernets2Contract ', error.message);
             }
 
             // reach limits of attempts
             if (i + 1 === attemptsDeployProxy) {
-                throw new Error('Supernets2dot0 contract has not been deployed');
+                throw new Error('Supernets2 contract has not been deployed');
             }
         }
 
-        expect(precalculateSupernets2dot0Address).to.be.equal(supernets2dot0Contract.address);
+        expect(precalculateSupernets2Address).to.be.equal(supernets2Contract.address);
 
         console.log('#######################\n');
-        console.log('supernets2dot0Contract deployed to:', supernets2dot0Contract.address);
+        console.log('supernets2Contract deployed to:', supernets2Contract.address);
 
         // save an ongoing deployment
-        ongoingDeployment.supernets2dot0Contract = supernets2dot0Contract.address;
+        ongoingDeployment.supernets2Contract = supernets2Contract.address;
         fs.writeFileSync(pathOngoingDeploymentJson, JSON.stringify(ongoingDeployment, null, 1));
 
-        // Transfer ownership of supernets2dot0Contract
-        if (supernets2dot0Owner !== deployer.address) {
-            await (await supernets2dot0Contract.transferOwnership(supernets2dot0Owner)).wait();
+        // Transfer ownership of supernets2Contract
+        if (supernets2Owner !== deployer.address) {
+            await (await supernets2Contract.transferOwnership(supernets2Owner)).wait();
         }
 
-        deploymentBlockNumber = (await supernets2dot0Contract.deployTransaction.wait()).blockNumber;
+        deploymentBlockNumber = (await supernets2Contract.deployTransaction.wait()).blockNumber;
     } else {
         // Expect the precalculate address matches de onogin deployment, sanity check
-        expect(precalculateSupernets2dot0Address).to.be.equal(ongoingDeployment.supernets2dot0Contract);
-        supernets2dot0Contract = Supernets2dot0Factory.attach(ongoingDeployment.supernets2dot0Contract);
+        expect(precalculateSupernets2Address).to.be.equal(ongoingDeployment.supernets2Contract);
+        supernets2Contract = Supernets2Factory.attach(ongoingDeployment.supernets2Contract);
 
         console.log('#######################\n');
-        console.log('supernets2dot0Contract already deployed on: ', ongoingDeployment.supernets2dot0Contract);
+        console.log('supernets2Contract already deployed on: ', ongoingDeployment.supernets2Contract);
 
         // Import OZ manifest the deployed contracts, its enough to import just the proyx, the rest are imported automatically ( admin/impl)
-        await upgrades.forceImport(ongoingDeployment.supernets2dot0Contract, Supernets2dot0Factory, 'transparent');
+        await upgrades.forceImport(ongoingDeployment.supernets2Contract, Supernets2Factory, 'transparent');
 
-        const supernets2dot0OwnerContract = await supernets2dot0Contract.owner();
-        if (supernets2dot0OwnerContract === deployer.address) {
-            // Transfer ownership of supernets2dot0Contract
-            if (supernets2dot0Owner !== deployer.address) {
-                await (await supernets2dot0Contract.transferOwnership(supernets2dot0Owner)).wait();
+        const supernets2OwnerContract = await supernets2Contract.owner();
+        if (supernets2OwnerContract === deployer.address) {
+            // Transfer ownership of supernets2Contract
+            if (supernets2Owner !== deployer.address) {
+                await (await supernets2Contract.transferOwnership(supernets2Owner)).wait();
             }
         } else {
-            expect(supernets2dot0Owner).to.be.equal(supernets2dot0OwnerContract);
+            expect(supernets2Owner).to.be.equal(supernets2OwnerContract);
         }
         deploymentBlockNumber = 0;
     }
 
     console.log('\n#######################');
-    console.log('#####    Checks  Supernets2dot0  #####');
+    console.log('#####    Checks  Supernets2  #####');
     console.log('#######################');
-    console.log('Supernets2dot0GlobalExitRootAddress:', await supernets2dot0Contract.globalExitRootManager());
-    console.log('maticTokenAddress:', await supernets2dot0Contract.matic());
-    console.log('verifierAddress:', await supernets2dot0Contract.rollupVerifier());
-    console.log('supernets2dot0BridgeContract:', await supernets2dot0Contract.bridgeAddress());
+    console.log('Supernets2GlobalExitRootAddress:', await supernets2Contract.globalExitRootManager());
+    console.log('maticTokenAddress:', await supernets2Contract.matic());
+    console.log('verifierAddress:', await supernets2Contract.rollupVerifier());
+    console.log('supernets2BridgeContract:', await supernets2Contract.bridgeAddress());
 
-    console.log('admin:', await supernets2dot0Contract.admin());
-    console.log('chainID:', await supernets2dot0Contract.chainID());
-    console.log('trustedSequencer:', await supernets2dot0Contract.trustedSequencer());
-    console.log('pendingStateTimeout:', await supernets2dot0Contract.pendingStateTimeout());
-    console.log('trustedAggregator:', await supernets2dot0Contract.trustedAggregator());
-    console.log('trustedAggregatorTimeout:', await supernets2dot0Contract.trustedAggregatorTimeout());
+    console.log('admin:', await supernets2Contract.admin());
+    console.log('chainID:', await supernets2Contract.chainID());
+    console.log('trustedSequencer:', await supernets2Contract.trustedSequencer());
+    console.log('pendingStateTimeout:', await supernets2Contract.pendingStateTimeout());
+    console.log('trustedAggregator:', await supernets2Contract.trustedAggregator());
+    console.log('trustedAggregatorTimeout:', await supernets2Contract.trustedAggregatorTimeout());
 
-    console.log('genesiRoot:', await supernets2dot0Contract.batchNumToStateRoot(0));
-    console.log('trustedSequencerURL:', await supernets2dot0Contract.trustedSequencerURL());
-    console.log('networkName:', await supernets2dot0Contract.networkName());
-    console.log('owner:', await supernets2dot0Contract.owner());
-    console.log('forkID:', await supernets2dot0Contract.forkID());
+    console.log('genesiRoot:', await supernets2Contract.batchNumToStateRoot(0));
+    console.log('trustedSequencerURL:', await supernets2Contract.trustedSequencerURL());
+    console.log('networkName:', await supernets2Contract.networkName());
+    console.log('owner:', await supernets2Contract.owner());
+    console.log('forkID:', await supernets2Contract.forkID());
 
     // Assert admin address
-    expect(await upgrades.erc1967.getAdminAddress(precalculateSupernets2dot0Address)).to.be.equal(proxyAdminAddress);
+    expect(await upgrades.erc1967.getAdminAddress(precalculateSupernets2Address)).to.be.equal(proxyAdminAddress);
     expect(await upgrades.erc1967.getAdminAddress(precalculateGLobalExitRootAddress)).to.be.equal(proxyAdminAddress);
     expect(await upgrades.erc1967.getAdminAddress(proxyBridgeAddress)).to.be.equal(proxyAdminAddress);
 
     const proxyAdminInstance = proxyAdminFactory.attach(proxyAdminAddress);
     const proxyAdminOwner = await proxyAdminInstance.owner();
-    const timelockContractFactory = await ethers.getContractFactory('Supernets2dot0Timelock', deployer);
+    const timelockContractFactory = await ethers.getContractFactory('Supernets2Timelock', deployer);
 
     // TODO test stop here
 
@@ -514,7 +514,7 @@ async function main() {
     if (proxyAdminOwner !== deployer.address) {
         // Check if there's a timelock deployed there that match the current deployment
         timelockContract = timelockContractFactory.attach(proxyAdminOwner);
-        expect(precalculateSupernets2dot0Address).to.be.equal(await timelockContract.supernets2dot0());
+        expect(precalculateSupernets2Address).to.be.equal(await timelockContract.supernets2());
 
         console.log('#######################\n');
         console.log(
@@ -528,13 +528,13 @@ async function main() {
         console.log('#######################');
         console.log('minDelayTimelock:', minDelayTimelock);
         console.log('timelockAddress:', timelockAddress);
-        console.log('supernets2dot0Address:', supernets2dot0Contract.address);
+        console.log('supernets2Address:', supernets2Contract.address);
         timelockContract = await timelockContractFactory.deploy(
             minDelayTimelock,
             [timelockAddress],
             [timelockAddress],
             timelockAddress,
-            supernets2dot0Contract.address,
+            supernets2Contract.address,
         );
         await timelockContract.deployed();
         console.log('#######################\n');
@@ -548,23 +548,23 @@ async function main() {
     }
 
     if (committeeTimelock) {
-        await (await supernets2dot0DataCommitteeContract.transferOwnership(timelockContract.address)).wait();
+        await (await supernets2DataCommitteeContract.transferOwnership(timelockContract.address)).wait();
     }
 
     console.log('\n#######################');
     console.log('#####  Checks TimelockContract  #####');
     console.log('#######################');
     console.log('minDelayTimelock:', await timelockContract.getMinDelay());
-    console.log('supernets2dot0:', await timelockContract.supernets2dot0());
+    console.log('supernets2:', await timelockContract.supernets2());
 
     const outputJson = {
-        supernets2dot0Address: supernets2dot0Contract.address,
-        supernets2dot0BridgeAddress: supernets2dot0BridgeContract.address,
-        supernets2dot0GlobalExitRootAddress: supernets2dot0GlobalExitRoot.address,
-        supernets2dot0DataCommitteeContract: supernets2dot0DataCommitteeContract.address,
+        supernets2Address: supernets2Contract.address,
+        supernets2BridgeAddress: supernets2BridgeContract.address,
+        supernets2GlobalExitRootAddress: supernets2GlobalExitRoot.address,
+        supernets2DataCommitteeContract: supernets2DataCommitteeContract.address,
         maticTokenAddress,
         verifierAddress: verifierContract.address,
-        supernets2dot0DeployerContract: supernets2dot0DeployerContract.address,
+        supernets2DeployerContract: supernets2DeployerContract.address,
         deployerAddress: deployer.address,
         timelockContractAddress: timelockContract.address,
         deploymentBlockNumber,

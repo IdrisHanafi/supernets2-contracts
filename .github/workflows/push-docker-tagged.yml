@@ -30,5 +30,5 @@ on:
           run: |
             npm i
             npm run docker:contracts
-            docker image tag hermeznetwork/geth-zklidium-contracts hermeznetwork/geth-zklidium-contracts:${{ github.ref_name }}
-            docker image push hermeznetwork/geth-zklidium-contracts:${{ github.ref_name }}
+          docker image tag hermeznetwork/geth-supernets2-contracts hermeznetwork/geth-supernets2-contracts:${{ github.ref_name }}
+          docker image push hermeznetwork/geth-supernets2-contracts:${{ github.ref_name }}

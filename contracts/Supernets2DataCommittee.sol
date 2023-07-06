@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.17;
 
-import "./interfaces/ISupernets2dot0DataCommitteeErrors.sol";
+import "./interfaces/ISupernets2DataCommitteeErrors.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract Supernets2dot0DataCommittee is
-ISupernets2dot0DataCommitteeErrors, OwnableUpgradeable {
+contract Supernets2DataCommittee is
+ISupernets2DataCommitteeErrors, OwnableUpgradeable {
     /**
      * @notice Struct which will store all the data of the committee members
      * @param url string that represents the URL of the member to be used to access the data

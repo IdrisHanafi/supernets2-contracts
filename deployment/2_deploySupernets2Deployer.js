@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
-const { deploySupernets2dot0Deployer } = require('./helpers/deployment-helpers');
+const { deploySupernets2Deployer } = require('./helpers/deployment-helpers');
 
 const pathDeployParameters = path.join(__dirname, './deploy_parameters.json');
 const deployParameters = require('./deploy_parameters.json');
@@ -47,26 +47,26 @@ async function main() {
         [deployer] = (await ethers.getSigners());
     }
 
-    // Load initialZkEVMDeployerOwner
+    // Load initialSupernets2DeployerOwner
     const {
-        initialZkEVMDeployerOwner,
+        initialSupernets2DeployerOwner,
     } = deployParameters;
 
-    if (initialZkEVMDeployerOwner === undefined || initialZkEVMDeployerOwner === '') {
-        throw new Error('Missing parameter: initialZkEVMDeployerOwner');
+    if (initialSupernets2DeployerOwner === undefined || initialSupernets2DeployerOwner === '') {
+        throw new Error('Missing parameter: initialSupernets2DeployerOwner');
     }
 
-    // Deploy Supernets2dot0Deployer if is not deployed already using keyless deployment
-    const [zkEVMDeployerContract, keylessDeployer] = await deploySupernets2dot0Deployer(initialZkEVMDeployerOwner, deployer);
+    // Deploy Supernets2Deployer if is not deployed already using keyless deployment
+    const [supernets2DeployerContract, keylessDeployer] = await deploySupernets2Deployer(initialSupernets2DeployerOwner, deployer);
     if (keylessDeployer === ethers.constants.AddressZero) {
         console.log('#######################\n');
-        console.log('supernets2dot0Deployer already deployed on: ', zkEVMDeployerContract.address);
+        console.log('supernets2Deployer already deployed on: ', supernets2DeployerContract.address);
     } else {
         console.log('#######################\n');
-        console.log('supernets2dot0Deployer deployed on: ', zkEVMDeployerContract.address);
+        console.log('supernets2Deployer deployed on: ', supernets2DeployerContract.address);
     }
 
-    deployParameters.supernets2dot0DeployerAddress = zkEVMDeployerContract.address;
+    deployParameters.supernets2DeployerAddress = supernets2DeployerContract.address;
     fs.writeFileSync(pathDeployParameters, JSON.stringify(deployParameters, null, 1));
 }
 

@@ -3,12 +3,12 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "./interfaces/IVerifierRollup.sol";
-import "./interfaces/ISupernets2dot0GlobalExitRoot.sol";
+import "./interfaces/ISupernets2GlobalExitRoot.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "./interfaces/ISupernets2dot0Bridge.sol";
+import "./interfaces/ISupernets2Bridge.sol";
 import "./lib/EmergencyManager.sol";
-import "./interfaces/ISupernets2dot0Errors.sol";
-import "./interfaces/ISupernets2dot0DataCommittee.sol";
+import "./interfaces/ISupernets2Errors.sol";
+import "./interfaces/ISupernets2DataCommittee.sol";
 
 /**
  * Contract responsible for managing the states and the updates of L2 network.
@@ -16,12 +16,12 @@ import "./interfaces/ISupernets2dot0DataCommittee.sol";
  * Any user can force some transaction and the sequencer will have a timeout to add them in the queue.
  * The sequenced state is deterministic and can be precalculated before it's actually verified by a zkProof.
  * The aggregators will be able to verify the sequenced state with zkProofs and therefore make available the withdrawals from L2 network.
- * To enter and exit of the L2 network will be used a Supernets2dot0Bridge smart contract that will be deployed in both networks.
+ * To enter and exit of the L2 network will be used a Supernets2Bridge smart contract that will be deployed in both networks.
  */
-contract Supernets2dot0 is
+contract Supernets2 is
     OwnableUpgradeable,
     EmergencyManager,
-    ISupernets2dot0Errors
+    ISupernets2Errors
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -152,13 +152,13 @@ contract Supernets2dot0 is
     IVerifierRollup public immutable rollupVerifier;
 
     // Global Exit Root interface
-    ISupernets2dot0GlobalExitRoot public immutable globalExitRootManager;
+    ISupernets2GlobalExitRoot public immutable globalExitRootManager;
 
-    // Supernets2dot0 Bridge Address
-    ISupernets2dot0Bridge public immutable bridgeAddress;
+    // Supernets2 Bridge Address
+    ISupernets2Bridge public immutable bridgeAddress;
 
-    // PolygonZkLidium Data Committee Address
-    ISupernets2dot0DataCommittee public immutable dataCommitteeAddress;
+    // Supernets2 Data Committee Address
+    ISupernets2DataCommittee public immutable dataCommitteeAddress;
 
     // L2 chain identifier
     uint64 public immutable chainID;
@@ -369,7 +369,7 @@ contract Supernets2dot0 is
      * @dev Emitted everytime the forkID is updated, this includes the first initialization of the contract
      * This event is intended to be emitted for every upgrade of the contract with relevant changes for the nodes
      */
-    event UpdateZkEVMVersion(uint64 numBatch, uint64 forkID, string version);
+    event UpdateSupernets2Version(uint64 numBatch, uint64 forkID, string version);
 
     /**
      * @param _globalExitRootManager Global exit root manager address
@@ -381,11 +381,11 @@ contract Supernets2dot0 is
      * @param _forkID Fork Id
      */
     constructor(
-        ISupernets2dot0GlobalExitRoot _globalExitRootManager,
+        ISupernets2GlobalExitRoot _globalExitRootManager,
         IERC20Upgradeable _matic,
         IVerifierRollup _rollupVerifier,
-        ISupernets2dot0Bridge _bridgeAddress,
-        ISupernets2dot0DataCommittee _dataCommitteeAddress,
+        ISupernets2Bridge _bridgeAddress,
+        ISupernets2DataCommittee _dataCommitteeAddress,
         uint64 _chainID,
         uint64 _forkID
     ) {
@@ -448,7 +448,7 @@ contract Supernets2dot0 is
         __Ownable_init_unchained();
 
         // emit version event
-        emit UpdateZkEVMVersion(0, forkID, _version);
+        emit UpdateSupernets2Version(0, forkID, _version);
     }
 
     modifier onlyAdmin() {
@@ -1387,7 +1387,7 @@ contract Supernets2dot0 is
     }
 
     /**
-     * @notice Allows to halt the Supernets2dot0 if its possible to prove a different state root given the same batches
+     * @notice Allows to halt the Supernets2 if its possible to prove a different state root given the same batches
      * @param initPendingStateNum Init pending state, 0 if consolidated state is used
      * @param finalPendingStateNum Final pending state, that will be used to compare with the newStateRoot
      * @param initNumBatch Batch which the aggregator starts the verification
@@ -1524,7 +1524,7 @@ contract Supernets2dot0 is
     }
 
     /**
-     * @notice Function to activate emergency state, which also enables the emergency mode on both Supernets2dot0 and Supernets2dot0Bridge contracts
+     * @notice Function to activate emergency state, which also enables the emergency mode on both Supernets2 and Supernets2Bridge contracts
      * If not called by the owner must be provided a batcnNum that does not have been aggregated in a _HALT_AGGREGATION_TIMEOUT period
      * @param sequencedBatchNum Sequenced batch number that has not been aggreagated in _HALT_AGGREGATION_TIMEOUT
      */
@@ -1559,10 +1559,10 @@ contract Supernets2dot0 is
     }
 
     /**
-     * @notice Function to deactivate emergency state on both Supernets2dot0 and Supernets2dot0Bridge contracts
+     * @notice Function to deactivate emergency state on both Supernets2 and Supernets2Bridge contracts
      */
     function deactivateEmergencyState() external onlyAdmin {
-        // Deactivate emergency state on Supernets2dot0Bridge
+        // Deactivate emergency state on Supernets2Bridge
         bridgeAddress.deactivateEmergencyState();
 
         // Deactivate emergency state on this contract
@@ -1570,10 +1570,10 @@ contract Supernets2dot0 is
     }
 
     /**
-     * @notice Internal function to activate emergency state on both Supernets2dot0 and Supernets2dot0Bridge contracts
+     * @notice Internal function to activate emergency state on both Supernets2 and Supernets2Bridge contracts
      */
     function _activateEmergencyState() internal override {
-        // Activate emergency state on Supernets2dot0 Bridge
+        // Activate emergency state on Supernets2 Bridge
         bridgeAddress.activateEmergencyState();
 
         // Activate emergency state on this contract

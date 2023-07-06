@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.17;
 
-import "../Supernets2dot0GlobalExitRootL2.sol";
+import "../Supernets2GlobalExitRootL2.sol";
 
 /**
  * Contract responsible for managing the exit roots across multiple networks
 
  */
-contract Supernets2dot0GlobalExitRootL2Mock is Supernets2dot0GlobalExitRootL2 {
+contract Supernets2GlobalExitRootL2Mock is Supernets2GlobalExitRootL2 {
     /**
-     * @param _bridgeAddress Supernets2dot0 Bridge contract address
+     * @param _bridgeAddress Supernets2 Bridge contract address
      */
     constructor(
         address _bridgeAddress
-    ) Supernets2dot0GlobalExitRootL2(_bridgeAddress) {}
+    ) Supernets2GlobalExitRootL2(_bridgeAddress) {}
 
     /**
      * @notice Set globalExitRoot

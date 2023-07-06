@@ -18,12 +18,12 @@ function calculateGlobalExitRoot(mainnetExitRoot, rollupExitRoot) {
     return ethers.utils.solidityKeccak256(['bytes32', 'bytes32'], [mainnetExitRoot, rollupExitRoot]);
 }
 
-describe('Supernets2dot0Bridge Contract Permit tests', () => {
+describe('Supernets2Bridge Contract Permit tests', () => {
     let deployer;
     let rollup;
 
-    let supernets2dot0GlobalExitRoot;
-    let supernets2dot0BridgeContract;
+    let supernets2GlobalExitRoot;
+    let supernets2BridgeContract;
     let tokenContract;
 
     const tokenName = 'Matic Token';
@@ -39,21 +39,21 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
     const networkIDRollup = 1;
     const LEAF_TYPE_ASSET = 0;
 
-    const supernets2dot0Address = ethers.constants.AddressZero;
+    const supernets2Address = ethers.constants.AddressZero;
 
     beforeEach('Deploy contracts', async () => {
         // load signers
         [deployer, rollup] = await ethers.getSigners();
 
-        // deploy Supernets2dot0Bridge
-        const supernets2dot0BridgeFactory = await ethers.getContractFactory('Supernets2dot0Bridge');
-        supernets2dot0BridgeContract = await upgrades.deployProxy(supernets2dot0BridgeFactory, [], { initializer: false });
+        // deploy Supernets2Bridge
+        const supernets2BridgeFactory = await ethers.getContractFactory('Supernets2Bridge');
+        supernets2BridgeContract = await upgrades.deployProxy(supernets2BridgeFactory, [], { initializer: false });
 
         // deploy global exit root manager
-        const supernets2dot0GlobalExitRootFactory = await ethers.getContractFactory('Supernets2dot0GlobalExitRoot');
-        supernets2dot0GlobalExitRoot = await supernets2dot0GlobalExitRootFactory.deploy(rollup.address, supernets2dot0BridgeContract.address);
+        const supernets2GlobalExitRootFactory = await ethers.getContractFactory('Supernets2GlobalExitRoot');
+        supernets2GlobalExitRoot = await supernets2GlobalExitRootFactory.deploy(rollup.address, supernets2BridgeContract.address);
 
-        await supernets2dot0BridgeContract.initialize(networkIDMainnet, supernets2dot0GlobalExitRoot.address, supernets2dot0Address);
+        await supernets2BridgeContract.initialize(networkIDMainnet, supernets2GlobalExitRoot.address, supernets2Address);
 
         // deploy token
         const maticTokenFactory = await ethers.getContractFactory('TokenWrapped');
@@ -67,8 +67,8 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         await tokenContract.mint(deployer.address, tokenInitialBalance);
     });
 
-    it('should Supernets2dot0Bridge and with permit eip-2612 compilant', async () => {
-        const depositCount = await supernets2dot0BridgeContract.depositCount();
+    it('should Supernets2Bridge and with permit eip-2612 compilant', async () => {
+        const depositCount = await supernets2BridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const tokenAddress = tokenContract.address;
         const amount = ethers.utils.parseEther('10');
@@ -79,9 +79,9 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
 
         const balanceDeployer = await tokenContract.balanceOf(deployer.address);
-        const balanceBridge = await tokenContract.balanceOf(supernets2dot0BridgeContract.address);
+        const balanceBridge = await tokenContract.balanceOf(supernets2BridgeContract.address);
 
-        const rollupExitRoot = await supernets2dot0GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRoot = await supernets2GlobalExitRoot.lastRollupExitRoot();
 
         // pre compute root merkle tree in Js
         const height = 32;
@@ -98,7 +98,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         merkleTree.add(leafValue);
         const rootJSMainnet = merkleTree.getRoot();
 
-        await expect(supernets2dot0BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
+        await expect(supernets2BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
             .to.be.revertedWith('ERC20: insufficient allowance');
 
         // user permit
@@ -109,7 +109,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         const { v, r, s } = await createPermitSignature(
             tokenContract,
             deployer,
-            supernets2dot0BridgeContract.address,
+            supernets2BridgeContract.address,
             amount,
             nonce,
             deadline,
@@ -118,7 +118,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
 
         const dataPermit = ifacePermit.encodeFunctionData('permit', [
             deployer.address,
-            supernets2dot0BridgeContract.address,
+            supernets2BridgeContract.address,
             amount,
             deadline,
             v,
@@ -126,17 +126,17 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
             s,
         ]);
 
-        await expect(supernets2dot0BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, dataPermit))
-            .to.emit(supernets2dot0BridgeContract, 'BridgeEvent')
+        await expect(supernets2BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, dataPermit))
+            .to.emit(supernets2BridgeContract, 'BridgeEvent')
             .withArgs(originNetwork, tokenAddress, destinationNetwork, destinationAddress, amount, metadata, depositCount)
-            .to.emit(supernets2dot0GlobalExitRoot, 'UpdateGlobalExitRoot')
+            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(rootJSMainnet, rollupExitRoot);
 
         expect(await tokenContract.balanceOf(deployer.address)).to.be.equal(balanceDeployer.sub(amount));
-        expect(await tokenContract.balanceOf(supernets2dot0BridgeContract.address)).to.be.equal(balanceBridge.add(amount));
+        expect(await tokenContract.balanceOf(supernets2BridgeContract.address)).to.be.equal(balanceBridge.add(amount));
 
         // check merkle root with SC
-        const rootSCMainnet = await supernets2dot0BridgeContract.getDepositRoot();
+        const rootSCMainnet = await supernets2BridgeContract.getDepositRoot();
         expect(rootSCMainnet).to.be.equal(rootJSMainnet);
 
         // check merkle proof
@@ -145,7 +145,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proof, index, rootSCMainnet)).to.be.equal(true);
-        expect(await supernets2dot0BridgeContract.verifyMerkleProof(
+        expect(await supernets2BridgeContract.verifyMerkleProof(
             leafValue,
             proof,
             index,
@@ -153,10 +153,10 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         )).to.be.equal(true);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(rootJSMainnet, rollupExitRoot);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2dot0GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
     });
 
-    it('should Supernets2dot0Bridge with permit DAI type contracts', async () => {
+    it('should Supernets2Bridge with permit DAI type contracts', async () => {
         const { chainId } = await ethers.provider.getNetwork();
         const daiTokenFactory = await ethers.getContractFactory('Dai');
         const daiContract = await daiTokenFactory.deploy(
@@ -165,7 +165,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         await daiContract.deployed();
         await daiContract.mint(deployer.address, ethers.utils.parseEther('100'));
 
-        const depositCount = await supernets2dot0BridgeContract.depositCount();
+        const depositCount = await supernets2BridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const tokenAddress = daiContract.address;
         const amount = ethers.utils.parseEther('10');
@@ -179,9 +179,9 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
 
         const balanceDeployer = await daiContract.balanceOf(deployer.address);
-        const balanceBridge = await daiContract.balanceOf(supernets2dot0BridgeContract.address);
+        const balanceBridge = await daiContract.balanceOf(supernets2BridgeContract.address);
 
-        const rollupExitRoot = await supernets2dot0GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRoot = await supernets2GlobalExitRoot.lastRollupExitRoot();
 
         // pre compute root merkle tree in Js
         const height = 32;
@@ -198,7 +198,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         merkleTree.add(leafValue);
         const rootJSMainnet = merkleTree.getRoot();
 
-        await expect(supernets2dot0BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
+        await expect(supernets2BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
             .to.be.revertedWith('Dai/insufficient-allowance');
 
         // user permit
@@ -208,14 +208,14 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         const { v, r, s } = await createPermitSignatureDaiType(
             daiContract,
             deployer,
-            supernets2dot0BridgeContract.address,
+            supernets2BridgeContract.address,
             nonce,
             deadline,
             chainId,
         );
         const dataPermit = ifacePermitDAI.encodeFunctionData('permit', [
             deployer.address,
-            supernets2dot0BridgeContract.address,
+            supernets2BridgeContract.address,
             nonce,
             deadline,
             true,
@@ -224,17 +224,17 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
             s,
         ]);
 
-        await expect(supernets2dot0BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, dataPermit))
-            .to.emit(supernets2dot0BridgeContract, 'BridgeEvent')
+        await expect(supernets2BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, dataPermit))
+            .to.emit(supernets2BridgeContract, 'BridgeEvent')
             .withArgs(originNetwork, tokenAddress, destinationNetwork, destinationAddress, amount, metadata, depositCount)
-            .to.emit(supernets2dot0GlobalExitRoot, 'UpdateGlobalExitRoot')
+            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(rootJSMainnet, rollupExitRoot);
 
         expect(await daiContract.balanceOf(deployer.address)).to.be.equal(balanceDeployer.sub(amount));
-        expect(await daiContract.balanceOf(supernets2dot0BridgeContract.address)).to.be.equal(balanceBridge.add(amount));
+        expect(await daiContract.balanceOf(supernets2BridgeContract.address)).to.be.equal(balanceBridge.add(amount));
 
         // check merkle root with SC
-        const rootSCMainnet = await supernets2dot0BridgeContract.getDepositRoot();
+        const rootSCMainnet = await supernets2BridgeContract.getDepositRoot();
         expect(rootSCMainnet).to.be.equal(rootJSMainnet);
 
         // check merkle proof
@@ -243,7 +243,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proof, index, rootSCMainnet)).to.be.equal(true);
-        expect(await supernets2dot0BridgeContract.verifyMerkleProof(
+        expect(await supernets2BridgeContract.verifyMerkleProof(
             leafValue,
             proof,
             index,
@@ -251,10 +251,10 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         )).to.be.equal(true);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(rootJSMainnet, rollupExitRoot);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2dot0GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
     });
 
-    it('should Supernets2dot0Bridge with permit UNI type contracts', async () => {
+    it('should Supernets2Bridge with permit UNI type contracts', async () => {
         const uniTokenFactory = await ethers.getContractFactory('Uni');
         const uniContract = await uniTokenFactory.deploy(
             deployer.address,
@@ -264,7 +264,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         await uniContract.deployed();
         await uniContract.mint(deployer.address, ethers.utils.parseEther('100'));
 
-        const depositCount = await supernets2dot0BridgeContract.depositCount();
+        const depositCount = await supernets2BridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const tokenAddress = uniContract.address;
         const amount = ethers.utils.parseEther('10');
@@ -278,9 +278,9 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
 
         const balanceDeployer = await uniContract.balanceOf(deployer.address);
-        const balanceBridge = await uniContract.balanceOf(supernets2dot0BridgeContract.address);
+        const balanceBridge = await uniContract.balanceOf(supernets2BridgeContract.address);
 
-        const rollupExitRoot = await supernets2dot0GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRoot = await supernets2GlobalExitRoot.lastRollupExitRoot();
 
         // pre compute root merkle tree in Js
         const height = 32;
@@ -297,7 +297,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         merkleTree.add(leafValue);
         const rootJSMainnet = merkleTree.getRoot();
 
-        await expect(supernets2dot0BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
+        await expect(supernets2BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
             .to.be.revertedWith('Uni::transferFrom: transfer amount exceeds spender allowance');
 
         // user permit
@@ -308,7 +308,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         const { v, r, s } = await createPermitSignatureUniType(
             uniContract,
             deployer,
-            supernets2dot0BridgeContract.address,
+            supernets2BridgeContract.address,
             amount,
             nonce,
             deadline,
@@ -316,7 +316,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         );
         const dataPermit = ifacePermit.encodeFunctionData('permit', [
             deployer.address,
-            supernets2dot0BridgeContract.address,
+            supernets2BridgeContract.address,
             amount,
             deadline,
             v,
@@ -324,17 +324,17 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
             s,
         ]);
 
-        await expect(supernets2dot0BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, dataPermit))
-            .to.emit(supernets2dot0BridgeContract, 'BridgeEvent')
+        await expect(supernets2BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, dataPermit))
+            .to.emit(supernets2BridgeContract, 'BridgeEvent')
             .withArgs(originNetwork, tokenAddress, destinationNetwork, destinationAddress, amount, metadata, depositCount)
-            .to.emit(supernets2dot0GlobalExitRoot, 'UpdateGlobalExitRoot')
+            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(rootJSMainnet, rollupExitRoot);
 
         expect(await uniContract.balanceOf(deployer.address)).to.be.equal(balanceDeployer.sub(amount));
-        expect(await uniContract.balanceOf(supernets2dot0BridgeContract.address)).to.be.equal(balanceBridge.add(amount));
+        expect(await uniContract.balanceOf(supernets2BridgeContract.address)).to.be.equal(balanceBridge.add(amount));
 
         // check merkle root with SC
-        const rootSCMainnet = await supernets2dot0BridgeContract.getDepositRoot();
+        const rootSCMainnet = await supernets2BridgeContract.getDepositRoot();
         expect(rootSCMainnet).to.be.equal(rootJSMainnet);
 
         // check merkle proof
@@ -343,7 +343,7 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proof, index, rootSCMainnet)).to.be.equal(true);
-        expect(await supernets2dot0BridgeContract.verifyMerkleProof(
+        expect(await supernets2BridgeContract.verifyMerkleProof(
             leafValue,
             proof,
             index,
@@ -351,6 +351,6 @@ describe('Supernets2dot0Bridge Contract Permit tests', () => {
         )).to.be.equal(true);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(rootJSMainnet, rollupExitRoot);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2dot0GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
     });
 });

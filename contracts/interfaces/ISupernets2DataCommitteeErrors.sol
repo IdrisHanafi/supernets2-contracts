@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-interface ISupernets2dot0DataCommitteeErrors {
+interface ISupernets2DataCommitteeErrors {
     /**
      * @dev Thrown when the addres bytes doesn't have the expected length
      */

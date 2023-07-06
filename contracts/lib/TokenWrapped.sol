@@ -25,7 +25,7 @@ contract TokenWrapped is ERC20 {
     // Domain separator calculated on deployment
     bytes32 private immutable _DEPLOYMENT_DOMAIN_SEPARATOR;
 
-    // Supernets2dot0 Bridge address
+    // Supernets2 Bridge address
     address public immutable bridgeAddress;
 
     // Decimals
@@ -37,7 +37,7 @@ contract TokenWrapped is ERC20 {
     modifier onlyBridge() {
         require(
             msg.sender == bridgeAddress,
-            "TokenWrapped::onlyBridge: Not Supernets2dot0Bridge"
+            "TokenWrapped::onlyBridge: Not Supernets2Bridge"
         );
         _;
     }
