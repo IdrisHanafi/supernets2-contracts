@@ -1,7 +1,7 @@
 
 Contract module which acts as a timelocked controller.
 This gives time for users of the controlled contract to exit before a potentially dangerous maintenance operation is applied.
-If emergency mode of the zkevm contract system is active, this timelock have no delay.
+If emergency mode of the supernets2 contract system is active, this timelock have no delay.
 
 ## Functions
 ### constructor

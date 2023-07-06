@@ -1,4 +1,4 @@
-Supernets2Bridge that will be deployed on both networks Ethereum and Polygon zkEVM
+Supernets2Bridge that will be deployed on both networks Ethereum and Supernets2
 Contract responsible to manage the token interactions with other networks
 
 

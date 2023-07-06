@@ -14,6 +14,7 @@ To enter and exit of the L2 network will be used a Supernets2Bridge smart contra
     contract IERC20Upgradeable _matic,
     contract IVerifierRollup _rollupVerifier,
     contract ISupernets2Bridge _bridgeAddress,
+    contract ISupernets2DataCommittee _dataCommitteeAddress,
     uint64 _chainID,
     uint64 _forkID
   ) public
@@ -27,6 +28,7 @@ To enter and exit of the L2 network will be used a Supernets2Bridge smart contra
 |`_matic` | contract IERC20Upgradeable | MATIC token address
 |`_rollupVerifier` | contract IVerifierRollup | Rollup verifier address
 |`_bridgeAddress` | contract ISupernets2Bridge | Bridge address
+|`_dataCommitteeAddress` | contract ISupernets2DataCommittee | Data committee address
 |`_chainID` | uint64 | L2 chainID
 |`_forkID` | uint64 | Fork Id
 
@@ -53,7 +55,8 @@ To enter and exit of the L2 network will be used a Supernets2Bridge smart contra
 ```solidity
   function sequenceBatches(
     struct Supernets2.BatchData[] batches,
-    address l2Coinbase
+    address l2Coinbase,
+    bytes signaturesAndAddrs
   ) external
 ```
 Allows a sequencer to send multiple batches
@@ -64,6 +67,9 @@ Allows a sequencer to send multiple batches
 | :--- | :--- | :------------------------------------------------------------------- |
 |`batches` | struct Supernets2.BatchData[] | Struct array which holds the necessary data to append new batches to the sequence
 |`l2Coinbase` | address | Address that will receive the fees from L2
+|`signaturesAndAddrs` | bytes | Byte array containing the signatures and all the addresses of the committee in ascending order
+[signature 0, ..., signature requiredAmountOfSignatures -1, address 0, ... address N]
+note that each ECDSA signatures are used, therefore each one must be 65 bytes
 
 ### verifyBatches
 ```solidity
