@@ -62,7 +62,7 @@ async function main() {
                     [timelockAddress],
                     [timelockAddress],
                     timelockAddress,
-                    deployOutputParameters.polygonZkEVMAddress,
+                    deployOutputParameters.supernets2Address,
                 ],
             },
         );
@@ -82,17 +82,18 @@ async function main() {
         expect(error.message.toLowerCase().includes('already verified')).to.be.equal(true);
     }
 
-    // verify zkEVM address
+    // verify supernets2 address
     try {
         await hre.run(
             'verify:verify',
             {
-                address: deployOutputParameters.polygonZkEVMAddress,
+                address: deployOutputParameters.supernets2Address,
                 constructorArguments: [
-                    deployOutputParameters.polygonZkEVMGlobalExitRootAddress,
+                    deployOutputParameters.supernets2GlobalExitRootAddress,
                     deployOutputParameters.maticTokenAddress,
                     deployOutputParameters.verifierAddress,
-                    deployOutputParameters.polygonZkEVMBridgeAddress,
+                    deployOutputParameters.supernets2BridgeAddress,
+                    deployOutputParameters.supernets2DataCommitteeContract,
                     deployOutputParameters.chainID,
                     deployOutputParameters.forkID,
                 ],
@@ -107,10 +108,10 @@ async function main() {
         await hre.run(
             'verify:verify',
             {
-                address: deployOutputParameters.polygonZkEVMGlobalExitRootAddress,
+                address: deployOutputParameters.supernets2GlobalExitRootAddress,
                 constructorArguments: [
-                    deployOutputParameters.polygonZkEVMAddress,
-                    deployOutputParameters.polygonZkEVMBridgeAddress,
+                    deployOutputParameters.supernets2Address,
+                    deployOutputParameters.supernets2BridgeAddress,
                 ],
             },
         );
@@ -122,7 +123,7 @@ async function main() {
         await hre.run(
             'verify:verify',
             {
-                address: deployOutputParameters.polygonZkEVMBridgeAddress,
+                address: deployOutputParameters.supernets2BridgeAddress,
             },
         );
     } catch (error) {
