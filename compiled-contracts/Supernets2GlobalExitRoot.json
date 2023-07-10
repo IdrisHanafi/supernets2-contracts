@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "Supernets2GlobalExitRoot",
-  "sourceName": "contracts/Supernets2GlobalExitRoot.sol",
+  "contractName": "PolygonZkEVMGlobalExitRoot",
+  "sourceName": "contracts/PolygonZkEVMGlobalExitRoot.sol",
   "abi": [
     {
       "inputs": [

@@ -18,10 +18,10 @@ contract Supernets2Mock is Supernets2 {
      * @param _chainID L2 chainID
      */
     constructor(
-        ISupernets2GlobalExitRoot _globalExitRootManager,
+        IPolygonZkEVMGlobalExitRoot _globalExitRootManager,
         IERC20Upgradeable _matic,
         IVerifierRollup _rollupVerifier,
-        ISupernets2Bridge _bridgeAddress,
+        IPolygonZkEVMBridge _bridgeAddress,
         ISupernets2DataCommittee _dataComiteeAddress,
         uint64 _chainID,
         uint64 _forkID

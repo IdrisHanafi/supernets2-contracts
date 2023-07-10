@@ -5,21 +5,21 @@ pragma solidity 0.8.17;
 import "./lib/DepositContract.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "./lib/TokenWrapped.sol";
-import "./interfaces/IBaseSupernets2GlobalExitRoot.sol";
+import "./interfaces/IBasePolygonZkEVMGlobalExitRoot.sol";
 import "./interfaces/IBridgeMessageReceiver.sol";
-import "./interfaces/ISupernets2Bridge.sol";
+import "./interfaces/IPolygonZkEVMBridge.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import "./lib/EmergencyManager.sol";
 import "./lib/GlobalExitRootLib.sol";
 
 /**
- * Supernets2Bridge that will be deployed on both networks Ethereum and Supernets2
+ * PolygonZkEVMBridge that will be deployed on both networks Ethereum and Polygon zkEVM
  * Contract responsible to manage the token interactions with other networks
  */
-contract Supernets2Bridge is
+contract PolygonZkEVMBridge is
     DepositContract,
     EmergencyManager,
-    ISupernets2Bridge
+    IPolygonZkEVMBridge
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -51,7 +51,7 @@ contract Supernets2Bridge is
     uint32 public networkID;
 
     // Global Exit Root address
-    IBaseSupernets2GlobalExitRoot public globalExitRootManager;
+    IBasePolygonZkEVMGlobalExitRoot public globalExitRootManager;
 
     // Last updated deposit count to the global exit root manager
     uint32 public lastUpdatedDepositCount;
@@ -65,32 +65,32 @@ contract Supernets2Bridge is
     // Wrapped token Address --> Origin token information
     mapping(address => TokenInformation) public wrappedTokenToTokenInfo;
 
-    // Supernets2 address
-    address public supernets2address;
+    // PolygonZkEVM address
+    address public polygonZkEVMaddress;
 
     /**
      * @param _networkID networkID
      * @param _globalExitRootManager global exit root manager address
-     * @param _supernets2address supernets2 address
-     * @notice The value of `_supernets2address` on the L2 deployment of the contract will be address(0), so
+     * @param _polygonZkEVMaddress polygonZkEVM address
+     * @notice The value of `_polygonZkEVMaddress` on the L2 deployment of the contract will be address(0), so
      * emergency state is not possible for the L2 deployment of the bridge, intentionally
      */
     function initialize(
         uint32 _networkID,
-        IBaseSupernets2GlobalExitRoot _globalExitRootManager,
-        address _supernets2address
+        IBasePolygonZkEVMGlobalExitRoot _globalExitRootManager,
+        address _polygonZkEVMaddress
     ) external virtual initializer {
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
-        supernets2address = _supernets2address;
+        polygonZkEVMaddress = _polygonZkEVMaddress;
 
         // Initialize OZ contracts
         __ReentrancyGuard_init();
     }
 
-    modifier onlySupernets2() {
-        if (supernets2address != msg.sender) {
-            revert OnlySupernets2();
+    modifier onlyPolygonZkEVM() {
+        if (polygonZkEVMaddress != msg.sender) {
+            revert OnlyPolygonZkEVM();
         }
         _;
     }
@@ -530,17 +530,17 @@ contract Supernets2Bridge is
 
     /**
      * @notice Function to activate the emergency state
-     " Only can be called by the Supernets2 in extreme situations
+     " Only can be called by the Polygon ZK-EVM in extreme situations
      */
-    function activateEmergencyState() external onlySupernets2 {
+    function activateEmergencyState() external onlyPolygonZkEVM {
         _activateEmergencyState();
     }
 
     /**
      * @notice Function to deactivate the emergency state
-     " Only can be called by the Supernets2
+     " Only can be called by the Polygon ZK-EVM
      */
-    function deactivateEmergencyState() external onlySupernets2 {
+    function deactivateEmergencyState() external onlyPolygonZkEVM {
         _deactivateEmergencyState();
     }
 

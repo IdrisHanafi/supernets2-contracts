@@ -29,11 +29,11 @@ describe('Supernets2', () => {
 
     let timelockContract;
     let verifierContract;
-    let supernets2BridgeContract;
+    let PolygonZkEVMBridgeContract;
     let supernets2Contract;
     let supernets2DataCommitteeContract;
     let maticTokenContract;
-    let supernets2GlobalExitRoot;
+    let PolygonZkEVMGlobalExitRoot;
 
     const maticTokenName = 'Matic Token';
     const maticTokenSymbol = 'MATIC';
@@ -85,7 +85,7 @@ describe('Supernets2', () => {
 
         const nonceProxyBridge = Number((await ethers.provider.getTransactionCount(deployer.address))) + (firstDeployment ? 3 : 2);
         const nonceProxyCommittee = nonceProxyBridge + (firstDeployment ? 2 : 1);
-        // Always have to redeploy impl since the supernets2GlobalExitRoot address changes
+        // Always have to redeploy impl since the PolygonZkEVMGlobalExitRoot address changes
         const nonceProxySupernets2 = nonceProxyCommittee + 2;
 
         const precalculateBridgeAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyBridge });
@@ -93,16 +93,16 @@ describe('Supernets2', () => {
         const precalculateSupernets2Address = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxySupernets2 });
         firstDeployment = false;
 
-        const Supernets2GlobalExitRootFactory = await ethers.getContractFactory('Supernets2GlobalExitRoot');
-        supernets2GlobalExitRoot = await upgrades.deployProxy(Supernets2GlobalExitRootFactory, [], {
+        const PolygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory('PolygonZkEVMGlobalExitRoot');
+        PolygonZkEVMGlobalExitRoot = await upgrades.deployProxy(PolygonZkEVMGlobalExitRootFactory, [], {
             initializer: false,
             constructorArgs: [precalculateSupernets2Address, precalculateBridgeAddress],
             unsafeAllow: ['constructor', 'state-variable-immutable'],
         });
 
-        // deploy Supernets2Bridge
-        const supernets2BridgeFactory = await ethers.getContractFactory('Supernets2Bridge');
-        supernets2BridgeContract = await upgrades.deployProxy(supernets2BridgeFactory, [], { initializer: false });
+        // deploy PolygonZkEVMBridge
+        const PolygonZkEVMBridgeFactory = await ethers.getContractFactory('PolygonZkEVMBridge');
+        PolygonZkEVMBridgeContract = await upgrades.deployProxy(PolygonZkEVMBridgeFactory, [], { initializer: false });
 
         // deploy Supernets2DataCommittee
         const supernets2DataCommitteeFactory = await ethers.getContractFactory('Supernets2DataCommittee');
@@ -117,10 +117,10 @@ describe('Supernets2', () => {
         supernets2Contract = await upgrades.deployProxy(Supernets2Factory, [], {
             initializer: false,
             constructorArgs: [
-                supernets2GlobalExitRoot.address,
+                PolygonZkEVMGlobalExitRoot.address,
                 maticTokenContract.address,
                 verifierContract.address,
-                supernets2BridgeContract.address,
+                PolygonZkEVMBridgeContract.address,
                 supernets2DataCommitteeContract.address,
                 chainID,
                 0,
@@ -128,11 +128,11 @@ describe('Supernets2', () => {
             unsafeAllow: ['constructor', 'state-variable-immutable'],
         });
 
-        expect(precalculateBridgeAddress).to.be.equal(supernets2BridgeContract.address);
+        expect(precalculateBridgeAddress).to.be.equal(PolygonZkEVMBridgeContract.address);
         expect(precalculateCommitteeAddress).to.be.equal(supernets2DataCommitteeContract.address);
         expect(precalculateSupernets2Address).to.be.equal(supernets2Contract.address);
 
-        await supernets2BridgeContract.initialize(networkIDMainnet, supernets2GlobalExitRoot.address, supernets2Contract.address);
+        await PolygonZkEVMBridgeContract.initialize(networkIDMainnet, PolygonZkEVMGlobalExitRoot.address, supernets2Contract.address);
         await supernets2Contract.initialize(
             {
                 admin: admin.address,
@@ -161,34 +161,34 @@ describe('Supernets2', () => {
 
     it('Should upgrade brdige correctly', async () => {
         // Upgrade the contract
-        const supernets2BridgeFactoryV2 = await ethers.getContractFactory('Supernets2BridgeMock');
-        const supernets2BridgeContractV2 = supernets2BridgeFactoryV2.attach(supernets2BridgeContract.address);
+        const PolygonZkEVMBridgeFactoryV2 = await ethers.getContractFactory('PolygonZkEVMBridgeMock');
+        const PolygonZkEVMBridgeContractV2 = PolygonZkEVMBridgeFactoryV2.attach(PolygonZkEVMBridgeContract.address);
 
         // Check that is the v0 contract
-        await expect(supernets2BridgeContractV2.maxEtherBridge()).to.be.reverted;
+        await expect(PolygonZkEVMBridgeContractV2.maxEtherBridge()).to.be.reverted;
 
         // Upgrade the contract
-        await upgrades.upgradeProxy(supernets2BridgeContract.address, supernets2BridgeFactoryV2);
+        await upgrades.upgradeProxy(PolygonZkEVMBridgeContract.address, PolygonZkEVMBridgeFactoryV2);
 
-        await expect(await supernets2BridgeContractV2.maxEtherBridge()).to.be.equal(0);
+        await expect(await PolygonZkEVMBridgeContractV2.maxEtherBridge()).to.be.equal(0);
     });
 
     it('Should transferOwnership of the proxyAdmin to the timelock', async () => {
         // Upgrade the contract
-        const supernets2BridgeFactoryV2 = await ethers.getContractFactory('Supernets2BridgeMock');
-        const supernets2BridgeContractV2 = supernets2BridgeFactoryV2.attach(supernets2BridgeContract.address);
+        const PolygonZkEVMBridgeFactoryV2 = await ethers.getContractFactory('PolygonZkEVMBridgeMock');
+        const PolygonZkEVMBridgeContractV2 = PolygonZkEVMBridgeFactoryV2.attach(PolygonZkEVMBridgeContract.address);
 
         // Check that is the v0 contract
-        await expect(supernets2BridgeContractV2.maxEtherBridge()).to.be.reverted;
+        await expect(PolygonZkEVMBridgeContractV2.maxEtherBridge()).to.be.reverted;
 
         // Transfer ownership to timelock
         await upgrades.admin.transferProxyAdminOwnership(timelockContract.address);
 
         // Can't upgrade the contract since it does not have the ownership
-        await expect(upgrades.upgradeProxy(supernets2BridgeContract.address, supernets2BridgeFactoryV2))
+        await expect(upgrades.upgradeProxy(PolygonZkEVMBridgeContract.address, PolygonZkEVMBridgeFactoryV2))
             .to.be.reverted;
 
-        const implBridgeV2Address = await upgrades.prepareUpgrade(supernets2BridgeContract.address, supernets2BridgeFactoryV2);
+        const implBridgeV2Address = await upgrades.prepareUpgrade(PolygonZkEVMBridgeContract.address, PolygonZkEVMBridgeFactoryV2);
         const proxyAdmin = await upgrades.admin.getInstance();
 
         // Use timelock
@@ -197,7 +197,7 @@ describe('Supernets2', () => {
             0,
             proxyAdmin.interface.encodeFunctionData(
                 'upgrade',
-                [supernets2BridgeContract.address,
+                [PolygonZkEVMBridgeContract.address,
                     implBridgeV2Address],
             ),
             ethers.constants.HashZero,
@@ -224,7 +224,7 @@ describe('Supernets2', () => {
         )).to.be.revertedWith('TimelockController: operation is not ready');
 
         // Check that is the v0 contract
-        await expect(supernets2BridgeContractV2.maxEtherBridge()).to.be.reverted;
+        await expect(PolygonZkEVMBridgeContractV2.maxEtherBridge()).to.be.reverted;
 
         await ethers.provider.send('evm_increaseTime', [minDelay]);
         await timelockContract.execute(
@@ -235,24 +235,24 @@ describe('Supernets2', () => {
             operation.salt,
         );
 
-        await expect(await supernets2BridgeContractV2.maxEtherBridge()).to.be.equal(0);
+        await expect(await PolygonZkEVMBridgeContractV2.maxEtherBridge()).to.be.equal(0);
     });
 
     it('Should check thet in emergency state the minDelay is 0', async () => {
         // Upgrade the contract
-        const supernets2BridgeFactoryV2 = await ethers.getContractFactory('Supernets2BridgeMock');
-        const supernets2BridgeContractV2 = supernets2BridgeFactoryV2.attach(supernets2BridgeContract.address);
+        const PolygonZkEVMBridgeFactoryV2 = await ethers.getContractFactory('PolygonZkEVMBridgeMock');
+        const PolygonZkEVMBridgeContractV2 = PolygonZkEVMBridgeFactoryV2.attach(PolygonZkEVMBridgeContract.address);
 
         // Check that is the v0 contract
-        await expect(supernets2BridgeContractV2.maxEtherBridge()).to.be.reverted;
+        await expect(PolygonZkEVMBridgeContractV2.maxEtherBridge()).to.be.reverted;
 
         // Transfer ownership to timelock
 
         // Can't upgrade the contract since it does not have the ownership
-        await expect(upgrades.upgradeProxy(supernets2BridgeContract.address, supernets2BridgeFactoryV2))
+        await expect(upgrades.upgradeProxy(PolygonZkEVMBridgeContract.address, PolygonZkEVMBridgeFactoryV2))
             .to.be.reverted;
 
-        const implBridgeV2Address = await upgrades.prepareUpgrade(supernets2BridgeContract.address, supernets2BridgeFactoryV2);
+        const implBridgeV2Address = await upgrades.prepareUpgrade(PolygonZkEVMBridgeContract.address, PolygonZkEVMBridgeFactoryV2);
         const proxyAdmin = await upgrades.admin.getInstance();
 
         // Use timelock
@@ -261,7 +261,7 @@ describe('Supernets2', () => {
             0,
             proxyAdmin.interface.encodeFunctionData(
                 'upgrade',
-                [supernets2BridgeContract.address,
+                [PolygonZkEVMBridgeContract.address,
                     implBridgeV2Address],
             ),
             ethers.constants.HashZero,
@@ -288,7 +288,7 @@ describe('Supernets2', () => {
         );
 
         // Check that is the v0 contract
-        await expect(supernets2BridgeContractV2.maxEtherBridge()).to.be.reverted;
+        await expect(PolygonZkEVMBridgeContractV2.maxEtherBridge()).to.be.reverted;
 
         // Transaction cna be executed, delay is reduced to 0, but fails bc this timelock is not owner
         await expect(timelockContract.execute(
@@ -319,19 +319,19 @@ describe('Supernets2', () => {
         expect(await timelockContractL2.supernets2()).to.be.equal(ethers.constants.AddressZero);
 
         // Upgrade the contract
-        const supernets2BridgeFactoryV2 = await ethers.getContractFactory('Supernets2BridgeMock');
-        const supernets2BridgeContractV2 = supernets2BridgeFactoryV2.attach(supernets2BridgeContract.address);
+        const PolygonZkEVMBridgeFactoryV2 = await ethers.getContractFactory('PolygonZkEVMBridgeMock');
+        const PolygonZkEVMBridgeContractV2 = PolygonZkEVMBridgeFactoryV2.attach(PolygonZkEVMBridgeContract.address);
 
         // Check that is the v0 contract
-        await expect(supernets2BridgeContractV2.maxEtherBridge()).to.be.reverted;
+        await expect(PolygonZkEVMBridgeContractV2.maxEtherBridge()).to.be.reverted;
 
         // Transfer ownership to timelock
 
         // Can't upgrade the contract since it does not have the ownership
-        await expect(upgrades.upgradeProxy(supernets2BridgeContract.address, supernets2BridgeFactoryV2))
+        await expect(upgrades.upgradeProxy(PolygonZkEVMBridgeContract.address, PolygonZkEVMBridgeFactoryV2))
             .to.be.reverted;
 
-        const implBridgeV2Address = await upgrades.prepareUpgrade(supernets2BridgeContract.address, supernets2BridgeFactoryV2);
+        const implBridgeV2Address = await upgrades.prepareUpgrade(PolygonZkEVMBridgeContract.address, PolygonZkEVMBridgeFactoryV2);
         const proxyAdmin = await upgrades.admin.getInstance();
 
         // Use timelock
@@ -340,7 +340,7 @@ describe('Supernets2', () => {
             0,
             proxyAdmin.interface.encodeFunctionData(
                 'upgrade',
-                [supernets2BridgeContract.address,
+                [PolygonZkEVMBridgeContract.address,
                     implBridgeV2Address],
             ),
             ethers.constants.HashZero,
@@ -379,7 +379,7 @@ describe('Supernets2', () => {
         );
 
         // Check that is the v0 contract
-        await expect(supernets2BridgeContractV2.maxEtherBridge()).to.be.reverted;
+        await expect(PolygonZkEVMBridgeContractV2.maxEtherBridge()).to.be.reverted;
 
         // Transaction cna be executed, delay is reduced to 0, but fails bc this timelock is not owner
         await expect(timelockContractL2.execute(

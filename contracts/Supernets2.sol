@@ -3,9 +3,9 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "./interfaces/IVerifierRollup.sol";
-import "./interfaces/ISupernets2GlobalExitRoot.sol";
+import "./interfaces/IPolygonZkEVMGlobalExitRoot.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "./interfaces/ISupernets2Bridge.sol";
+import "./interfaces/IPolygonZkEVMBridge.sol";
 import "./lib/EmergencyManager.sol";
 import "./interfaces/ISupernets2Errors.sol";
 import "./interfaces/ISupernets2DataCommittee.sol";
@@ -16,7 +16,7 @@ import "./interfaces/ISupernets2DataCommittee.sol";
  * Any user can force some transaction and the sequencer will have a timeout to add them in the queue.
  * The sequenced state is deterministic and can be precalculated before it's actually verified by a zkProof.
  * The aggregators will be able to verify the sequenced state with zkProofs and therefore make available the withdrawals from L2 network.
- * To enter and exit of the L2 network will be used a Supernets2Bridge smart contract that will be deployed in both networks.
+ * To enter and exit of the L2 network will be used a PolygonZkEVMBridge smart contract that will be deployed in both networks.
  */
 contract Supernets2 is
     OwnableUpgradeable,
@@ -152,10 +152,10 @@ contract Supernets2 is
     IVerifierRollup public immutable rollupVerifier;
 
     // Global Exit Root interface
-    ISupernets2GlobalExitRoot public immutable globalExitRootManager;
+    IPolygonZkEVMGlobalExitRoot public immutable globalExitRootManager;
 
     // Supernets2 Bridge Address
-    ISupernets2Bridge public immutable bridgeAddress;
+    IPolygonZkEVMBridge public immutable bridgeAddress;
 
     // Supernets2 Data Committee Address
     ISupernets2DataCommittee public immutable dataCommitteeAddress;
@@ -381,10 +381,10 @@ contract Supernets2 is
      * @param _forkID Fork Id
      */
     constructor(
-        ISupernets2GlobalExitRoot _globalExitRootManager,
+        IPolygonZkEVMGlobalExitRoot _globalExitRootManager,
         IERC20Upgradeable _matic,
         IVerifierRollup _rollupVerifier,
-        ISupernets2Bridge _bridgeAddress,
+        IPolygonZkEVMBridge _bridgeAddress,
         ISupernets2DataCommittee _dataCommitteeAddress,
         uint64 _chainID,
         uint64 _forkID
@@ -1524,7 +1524,7 @@ contract Supernets2 is
     }
 
     /**
-     * @notice Function to activate emergency state, which also enables the emergency mode on both Supernets2 and Supernets2Bridge contracts
+     * @notice Function to activate emergency state, which also enables the emergency mode on both Supernets2 and PolygonZkEVMBridge contracts
      * If not called by the owner must be provided a batcnNum that does not have been aggregated in a _HALT_AGGREGATION_TIMEOUT period
      * @param sequencedBatchNum Sequenced batch number that has not been aggreagated in _HALT_AGGREGATION_TIMEOUT
      */
@@ -1559,10 +1559,10 @@ contract Supernets2 is
     }
 
     /**
-     * @notice Function to deactivate emergency state on both Supernets2 and Supernets2Bridge contracts
+     * @notice Function to deactivate emergency state on both Supernets2 and PolygonZkEVMBridge contracts
      */
     function deactivateEmergencyState() external onlyAdmin {
-        // Deactivate emergency state on Supernets2Bridge
+        // Deactivate emergency state on PolygonZkEVMBridge
         bridgeAddress.deactivateEmergencyState();
 
         // Deactivate emergency state on this contract
@@ -1570,7 +1570,7 @@ contract Supernets2 is
     }
 
     /**
-     * @notice Internal function to activate emergency state on both Supernets2 and Supernets2Bridge contracts
+     * @notice Internal function to activate emergency state on both Supernets2 and PolygonZkEVMBridge contracts
      */
     function _activateEmergencyState() internal override {
         // Activate emergency state on Supernets2 Bridge

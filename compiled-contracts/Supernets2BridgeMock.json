@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "Supernets2BridgeMock",
-  "sourceName": "contracts/mocks/Supernets2BridgeMock.sol",
+  "contractName": "PolygonZkEVMBridgeMock",
+  "sourceName": "contracts/mocks/PolygonZkEVMBridgeMock.sol",
   "abi": [
     {
       "inputs": [],
@@ -569,7 +569,7 @@
       "name": "globalExitRootManager",
       "outputs": [
         {
-          "internalType": "contract IBaseSupernets2GlobalExitRoot",
+          "internalType": "contract IBasePolygonZkEVMGlobalExitRoot",
           "name": "",
           "type": "address"
         }
@@ -585,7 +585,7 @@
           "type": "uint32"
         },
         {
-          "internalType": "contract IBaseSupernets2GlobalExitRoot",
+          "internalType": "contract IBasePolygonZkEVMGlobalExitRoot",
           "name": "_globalExitRootManager",
           "type": "address"
         },

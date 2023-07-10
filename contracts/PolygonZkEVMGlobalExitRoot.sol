@@ -2,14 +2,14 @@
 
 pragma solidity 0.8.17;
 
-import "./interfaces/ISupernets2GlobalExitRoot.sol";
+import "./interfaces/IPolygonZkEVMGlobalExitRoot.sol";
 import "./lib/GlobalExitRootLib.sol";
 
 /**
  * Contract responsible for managing the exit roots across multiple networks
  */
-contract Supernets2GlobalExitRoot is ISupernets2GlobalExitRoot {
-    // Supernets2Bridge address
+contract PolygonZkEVMGlobalExitRoot is IPolygonZkEVMGlobalExitRoot {
+    // PolygonZkEVMBridge address
     address public immutable bridgeAddress;
 
     // Rollup contract address
@@ -34,7 +34,7 @@ contract Supernets2GlobalExitRoot is ISupernets2GlobalExitRoot {
 
     /**
      * @param _rollupAddress Rollup contract address
-     * @param _bridgeAddress Supernets2Bridge contract address
+     * @param _bridgeAddress PolygonZkEVMBridge contract address
      */
     constructor(address _rollupAddress, address _bridgeAddress) {
         rollupAddress = _rollupAddress;

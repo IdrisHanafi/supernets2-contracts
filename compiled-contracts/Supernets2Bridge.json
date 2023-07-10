@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "Supernets2Bridge",
-  "sourceName": "contracts/Supernets2Bridge.sol",
+  "contractName": "PolygonZkEVMBridge",
+  "sourceName": "contracts/PolygonZkEVMBridge.sol",
   "abi": [
     {
       "inputs": [],
@@ -550,7 +550,7 @@
       "name": "globalExitRootManager",
       "outputs": [
         {
-          "internalType": "contract IBaseSupernets2GlobalExitRoot",
+          "internalType": "contract IBasePolygonZkEVMGlobalExitRoot",
           "name": "",
           "type": "address"
         }
@@ -566,7 +566,7 @@
           "type": "uint32"
         },
         {
-          "internalType": "contract IBaseSupernets2GlobalExitRoot",
+          "internalType": "contract IBasePolygonZkEVMGlobalExitRoot",
           "name": "_globalExitRootManager",
           "type": "address"
         },

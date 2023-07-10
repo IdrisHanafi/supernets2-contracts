@@ -3,17 +3,17 @@ There will be a trusted sequencer, which is able to send transactions.
 Any user can force some transaction and the sequencer will have a timeout to add them in the queue.
 The sequenced state is deterministic and can be precalculated before it's actually verified by a zkProof.
 The aggregators will be able to verify the sequenced state with zkProofs and therefore make available the withdrawals from L2 network.
-To enter and exit of the L2 network will be used a Supernets2Bridge smart contract that will be deployed in both networks.
+To enter and exit of the L2 network will be used a PolygonZkEVMBridge smart contract that will be deployed in both networks.
 
 
 ## Functions
 ### constructor
 ```solidity
   function constructor(
-    contract ISupernets2GlobalExitRoot _globalExitRootManager,
+    contract IPolygonZkEVMGlobalExitRoot _globalExitRootManager,
     contract IERC20Upgradeable _matic,
     contract IVerifierRollup _rollupVerifier,
-    contract ISupernets2Bridge _bridgeAddress,
+    contract IPolygonZkEVMBridge _bridgeAddress,
     contract ISupernets2DataCommittee _dataCommitteeAddress,
     uint64 _chainID,
     uint64 _forkID
@@ -24,10 +24,10 @@ To enter and exit of the L2 network will be used a Supernets2Bridge smart contra
 #### Parameters:
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
-|`_globalExitRootManager` | contract ISupernets2GlobalExitRoot | Global exit root manager address
+|`_globalExitRootManager` | contract IPolygonZkEVMGlobalExitRoot | Global exit root manager address
 |`_matic` | contract IERC20Upgradeable | MATIC token address
 |`_rollupVerifier` | contract IVerifierRollup | Rollup verifier address
-|`_bridgeAddress` | contract ISupernets2Bridge | Bridge address
+|`_bridgeAddress` | contract IPolygonZkEVMBridge | Bridge address
 |`_dataCommitteeAddress` | contract ISupernets2DataCommittee | Data committee address
 |`_chainID` | uint64 | L2 chainID
 |`_forkID` | uint64 | Fork Id
@@ -467,7 +467,7 @@ Internal function that proves a different state root given the same batches to v
     uint64 sequencedBatchNum
   ) external
 ```
-Function to activate emergency state, which also enables the emergency mode on both Supernets2 and Supernets2Bridge contracts
+Function to activate emergency state, which also enables the emergency mode on both Supernets2 and PolygonZkEVMBridge contracts
 If not called by the owner must be provided a batcnNum that does not have been aggregated in a _HALT_AGGREGATION_TIMEOUT period
 
 
@@ -481,7 +481,7 @@ If not called by the owner must be provided a batcnNum that does not have been a
   function deactivateEmergencyState(
   ) external
 ```
-Function to deactivate emergency state on both Supernets2 and Supernets2Bridge contracts
+Function to deactivate emergency state on both Supernets2 and PolygonZkEVMBridge contracts
 
 
 
@@ -490,7 +490,7 @@ Function to deactivate emergency state on both Supernets2 and Supernets2Bridge c
   function _activateEmergencyState(
   ) internal
 ```
-Internal function to activate emergency state on both Supernets2 and Supernets2Bridge contracts
+Internal function to activate emergency state on both Supernets2 and PolygonZkEVMBridge contracts
 
 
 

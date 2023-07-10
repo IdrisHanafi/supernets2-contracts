@@ -6,14 +6,14 @@ if npm run lint; then
     npx hardhat compile --force
     npm run docgen
     git add docs
-    cp artifacts/contracts/Supernets2Bridge.sol/Supernets2Bridge.json compiled-contracts/
-    cp artifacts/contracts/Supernets2GlobalExitRoot.sol/Supernets2GlobalExitRoot.json compiled-contracts/
-    cp artifacts/contracts/Supernets2GlobalExitRootL2.sol/Supernets2GlobalExitRootL2.json compiled-contracts/
+    cp artifacts/contracts/PolygonZkEVMBridge.sol/PolygonZkEVMBridge.json compiled-contracts/
+    cp artifacts/contracts/PolygonZkEVMGlobalExitRoot.sol/PolygonZkEVMGlobalExitRoot.json compiled-contracts/
+    cp artifacts/contracts/PolygonZkEVMGlobalExitRootL2.sol/PolygonZkEVMGlobalExitRootL2.json compiled-contracts/
     cp artifacts/contracts/lib/TokenWrapped.sol/TokenWrapped.json compiled-contracts/
-    cp artifacts/contracts/mocks/Supernets2BridgeMock.sol/Supernets2BridgeMock.json compiled-contracts/
+    cp artifacts/contracts/mocks/PolygonZkEVMBridgeMock.sol/PolygonZkEVMBridgeMock.json compiled-contracts/
     cp artifacts/contracts/mocks/ERC20PermitMock.sol/ERC20PermitMock.json compiled-contracts/
-    cp artifacts/contracts/mocks/Supernets2GlobalExitRootL2Mock.sol/Supernets2GlobalExitRootL2Mock.json compiled-contracts/
-    cp artifacts/contracts/mocks/Supernets2GlobalExitRootMock.sol/Supernets2GlobalExitRootMock.json compiled-contracts/
+    cp artifacts/contracts/mocks/PolygonZkEVMGlobalExitRootL2Mock.sol/PolygonZkEVMGlobalExitRootL2Mock.json compiled-contracts/
+    cp artifacts/contracts/mocks/PolygonZkEVMGlobalExitRootMock.sol/PolygonZkEVMGlobalExitRootMock.json compiled-contracts/
     cp artifacts/contracts/mocks/Supernets2Mock.sol/Supernets2Mock.json compiled-contracts/
     cp artifacts/contracts/mocks/VerifierRollupHelperMock.sol/VerifierRollupHelperMock.json compiled-contracts/
     cp artifacts/contracts/Supernets2.sol/Supernets2.json compiled-contracts/

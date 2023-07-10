@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "Supernets2GlobalExitRootMock",
-  "sourceName": "contracts/mocks/Supernets2GlobalExitRootMock.sol",
+  "contractName": "PolygonZkEVMGlobalExitRootMock",
+  "sourceName": "contracts/mocks/PolygonZkEVMGlobalExitRootMock.sol",
   "abi": [
     {
       "inputs": [

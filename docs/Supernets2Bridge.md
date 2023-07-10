@@ -1,4 +1,4 @@
-Supernets2Bridge that will be deployed on both networks Ethereum and Supernets2
+PolygonZkEVMBridge that will be deployed on both networks Ethereum and Supernets2
 Contract responsible to manage the token interactions with other networks
 
 
@@ -7,7 +7,7 @@ Contract responsible to manage the token interactions with other networks
 ```solidity
   function initialize(
     uint32 _networkID,
-    contract IBaseSupernets2GlobalExitRoot _globalExitRootManager,
+    contract IBasePolygonZkEVMGlobalExitRoot _globalExitRootManager,
     address _supernets2address
   ) external
 ```
@@ -18,7 +18,7 @@ emergency state is not possible for the L2 deployment of the bridge, intentional
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`_networkID` | uint32 | networkID
-|`_globalExitRootManager` | contract IBaseSupernets2GlobalExitRoot | global exit root manager address
+|`_globalExitRootManager` | contract IBasePolygonZkEVMGlobalExitRoot | global exit root manager address
 |`_supernets2address` | address | supernets2 address
 
 

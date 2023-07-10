@@ -6,7 +6,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract ISupernets2GlobalExitRoot",
+          "internalType": "contract IPolygonZkEVMGlobalExitRoot",
           "name": "_globalExitRootManager",
           "type": "address"
         },
@@ -21,7 +21,7 @@
           "type": "address"
         },
         {
-          "internalType": "contract ISupernets2Bridge",
+          "internalType": "contract IPolygonZkEVMBridge",
           "name": "_bridgeAddress",
           "type": "address"
         },
@@ -717,7 +717,7 @@
       "name": "bridgeAddress",
       "outputs": [
         {
-          "internalType": "contract ISupernets2Bridge",
+          "internalType": "contract IPolygonZkEVMBridge",
           "name": "",
           "type": "address"
         }
@@ -936,7 +936,7 @@
       "name": "globalExitRootManager",
       "outputs": [
         {
-          "internalType": "contract ISupernets2GlobalExitRoot",
+          "internalType": "contract IPolygonZkEVMGlobalExitRoot",
           "name": "",
           "type": "address"
         }
