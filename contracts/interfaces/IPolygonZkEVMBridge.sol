@@ -2,11 +2,11 @@
 
 pragma solidity 0.8.17;
 
-interface ISupernets2Bridge {
+interface IPolygonZkEVMBridge {
     /**
-     * @dev Thrown when sender is not the Supernets2 address
+     * @dev Thrown when sender is not the PolygonZkEVM address
      */
-    error OnlySupernets2();
+    error OnlyPolygonZkEVM();
 
     /**
      * @dev Thrown when the destination network is invalid

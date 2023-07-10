@@ -1,11 +1,11 @@
-Contract responsible for managing the exit roots across multiple networks
+Contract responsible for managing the exit roots for the L2 and global exit roots
+The special zkRom variables will be accessed and updated directly by the zkRom
 
 
 ## Functions
 ### constructor
 ```solidity
   function constructor(
-    address _rollupAddress,
     address _bridgeAddress
   ) public
 ```
@@ -14,8 +14,7 @@ Contract responsible for managing the exit roots across multiple networks
 #### Parameters:
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
-|`_rollupAddress` | address | Rollup contract address
-|`_bridgeAddress` | address | Supernets2Bridge contract address
+|`_bridgeAddress` | address | PolygonZkEVMBridge contract address
 
 ### updateExitRoot
 ```solidity
@@ -30,22 +29,4 @@ Update the exit root of one of the networks and the global exit root
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`newRoot` | bytes32 | new exit tree root
-
-### getLastGlobalExitRoot
-```solidity
-  function getLastGlobalExitRoot(
-  ) public returns (bytes32)
-```
-Return last global exit root
-
-
-
-## Events
-### UpdateGlobalExitRoot
-```solidity
-  event UpdateGlobalExitRoot(
-  )
-```
-
-Emitted when the global exit root is updated
 

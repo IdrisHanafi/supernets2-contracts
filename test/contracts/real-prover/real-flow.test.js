@@ -17,9 +17,9 @@ const inputJson = require('./test-inputs/input.json');
 describe('Real flow test', () => {
     let verifierContract;
     let maticTokenContract;
-    let supernets2BridgeContract;
+    let PolygonZkEVMBridgeContract;
     let supernets2Contract;
-    let supernets2GlobalExitRoot;
+    let PolygonZkEVMGlobalExitRoot;
     let supernets2DataCommitteeContract;
     let deployer;
     let trustedSequencer;
@@ -85,7 +85,7 @@ describe('Real flow test', () => {
 
         const nonceProxyBridge = Number((await ethers.provider.getTransactionCount(deployer.address))) + (firstDeployment ? 3 : 2);
         const nonceProxyCommittee = nonceProxyBridge + (firstDeployment ? 2 : 1);
-        // Always have to redeploy impl since the supernets2GlobalExitRoot address changes
+        // Always have to redeploy impl since the PolygonZkEVMGlobalExitRoot address changes
         const nonceProxySupernets2 = nonceProxyCommittee + 2;
 
         const precalculateBridgeAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyBridge });
@@ -93,16 +93,16 @@ describe('Real flow test', () => {
         const precalculateSupernets2Address = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxySupernets2 });
         firstDeployment = false;
 
-        const Supernets2GlobalExitRootFactory = await ethers.getContractFactory('Supernets2GlobalExitRootMock');
-        supernets2GlobalExitRoot = await upgrades.deployProxy(Supernets2GlobalExitRootFactory, [], {
+        const PolygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory('PolygonZkEVMGlobalExitRootMock');
+        PolygonZkEVMGlobalExitRoot = await upgrades.deployProxy(PolygonZkEVMGlobalExitRootFactory, [], {
             initializer: false,
             constructorArgs: [precalculateSupernets2Address, precalculateBridgeAddress],
             unsafeAllow: ['constructor', 'state-variable-immutable'],
         });
 
-        // deploy Supernets2Bridge
-        const supernets2BridgeFactory = await ethers.getContractFactory('Supernets2Bridge');
-        supernets2BridgeContract = await upgrades.deployProxy(supernets2BridgeFactory, [], { initializer: false });
+        // deploy PolygonZkEVMBridge
+        const PolygonZkEVMBridgeFactory = await ethers.getContractFactory('PolygonZkEVMBridge');
+        PolygonZkEVMBridgeContract = await upgrades.deployProxy(PolygonZkEVMBridgeFactory, [], { initializer: false });
 
         // deploy Supernets2DataCommittee
         const supernets2DataCommitteeFactory = await ethers.getContractFactory('Supernets2DataCommittee');
@@ -117,10 +117,10 @@ describe('Real flow test', () => {
         supernets2Contract = await upgrades.deployProxy(Supernets2Factory, [], {
             initializer: false,
             constructorArgs: [
-                supernets2GlobalExitRoot.address,
+                PolygonZkEVMGlobalExitRoot.address,
                 maticTokenContract.address,
                 verifierContract.address,
-                supernets2BridgeContract.address,
+                PolygonZkEVMBridgeContract.address,
                 supernets2DataCommitteeContract.address,
                 chainID,
                 0,
@@ -128,11 +128,11 @@ describe('Real flow test', () => {
             unsafeAllow: ['constructor', 'state-variable-immutable'],
         });
 
-        expect(precalculateBridgeAddress).to.be.equal(supernets2BridgeContract.address);
+        expect(precalculateBridgeAddress).to.be.equal(PolygonZkEVMBridgeContract.address);
         expect(precalculateCommitteeAddress).to.be.equal(supernets2DataCommitteeContract.address);
         expect(precalculateSupernets2Address).to.be.equal(supernets2Contract.address);
 
-        await supernets2BridgeContract.initialize(networkIDMainnet, supernets2GlobalExitRoot.address, supernets2Contract.address);
+        await PolygonZkEVMBridgeContract.initialize(networkIDMainnet, PolygonZkEVMGlobalExitRoot.address, supernets2Contract.address);
         await supernets2Contract.initialize(
             {
                 admin: admin.address,
@@ -190,7 +190,7 @@ describe('Real flow test', () => {
             // prapare globalExitRoot
             const randomTimestamp = 1001;
             const { globalExitRoot } = batchesData[0];
-            await supernets2GlobalExitRoot.setGlobalExitRoot(globalExitRoot, randomTimestamp);
+            await PolygonZkEVMGlobalExitRoot.setGlobalExitRoot(globalExitRoot, randomTimestamp);
 
             const lastBatchSequenced = await supernets2Contract.lastBatchSequenced();
 

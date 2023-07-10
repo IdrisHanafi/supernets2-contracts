@@ -13,11 +13,11 @@ describe('Polygon Data Committee', () => {
     let admin;
 
     let verifierContract;
-    let supernets2BridgeContract;
+    let PolygonZkEVMBridgeContract;
     let supernets2Contract;
     let supernets2DataCommitteeContract;
     let maticTokenContract;
-    let supernets2GlobalExitRoot;
+    let PolygonZkEVMGlobalExitRoot;
 
     const maticTokenName = 'Matic Token';
     const maticTokenSymbol = 'MATIC';
@@ -142,32 +142,32 @@ describe('Polygon Data Committee', () => {
         );
 
         const nonceProxyBridge = Number((await ethers.provider.getTransactionCount(deployer.address))) + 2;
-        // Always have to redeploy impl since the supernets2GlobalExitRoot address changes
+        // Always have to redeploy impl since the PolygonZkEVMGlobalExitRoot address changes
         const nonceProxySupernets2 = nonceProxyBridge + 2;
 
         const precalculateBridgeAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyBridge });
         const precalculateSupernets2Address = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxySupernets2 });
 
-        const Supernets2GlobalExitRootFactory = await ethers.getContractFactory('Supernets2GlobalExitRoot');
-        supernets2GlobalExitRoot = await upgrades.deployProxy(Supernets2GlobalExitRootFactory, [], {
+        const PolygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory('PolygonZkEVMGlobalExitRoot');
+        PolygonZkEVMGlobalExitRoot = await upgrades.deployProxy(PolygonZkEVMGlobalExitRootFactory, [], {
             initializer: false,
             constructorArgs: [precalculateSupernets2Address, precalculateBridgeAddress],
             unsafeAllow: ['constructor', 'state-variable-immutable'],
         });
 
-        // deploy Supernets2Bridge
-        const supernets2BridgeFactory = await ethers.getContractFactory('Supernets2Bridge');
-        supernets2BridgeContract = await upgrades.deployProxy(supernets2BridgeFactory, [], { initializer: false });
+        // deploy PolygonZkEVMBridge
+        const PolygonZkEVMBridgeFactory = await ethers.getContractFactory('PolygonZkEVMBridge');
+        PolygonZkEVMBridgeContract = await upgrades.deployProxy(PolygonZkEVMBridgeFactory, [], { initializer: false });
 
         // deploy Supernets2Mock
         const Supernets2Factory = await ethers.getContractFactory('Supernets2Mock');
         supernets2Contract = await upgrades.deployProxy(Supernets2Factory, [], {
             initializer: false,
             constructorArgs: [
-                supernets2GlobalExitRoot.address,
+                PolygonZkEVMGlobalExitRoot.address,
                 maticTokenContract.address,
                 verifierContract.address,
-                supernets2BridgeContract.address,
+                PolygonZkEVMBridgeContract.address,
                 supernets2DataCommitteeContract.address,
                 chainID,
                 forkID,
@@ -175,10 +175,10 @@ describe('Polygon Data Committee', () => {
             unsafeAllow: ['constructor', 'state-variable-immutable'],
         });
 
-        expect(precalculateBridgeAddress).to.be.equal(supernets2BridgeContract.address);
+        expect(precalculateBridgeAddress).to.be.equal(PolygonZkEVMBridgeContract.address);
         expect(precalculateSupernets2Address).to.be.equal(supernets2Contract.address);
 
-        await supernets2BridgeContract.initialize(networkIDMainnet, supernets2GlobalExitRoot.address, supernets2Contract.address);
+        await PolygonZkEVMBridgeContract.initialize(networkIDMainnet, PolygonZkEVMGlobalExitRoot.address, supernets2Contract.address);
         await supernets2Contract.initialize(
             {
                 admin: admin.address,
@@ -519,7 +519,7 @@ describe('Polygon Data Committee', () => {
         const l2txDataForceBatch = '0x123456';
         const transactionsHashForceBatch = calculateBatchHashData(l2txDataForceBatch);
         const maticAmount = await supernets2Contract.getForcedBatchFee();
-        const lastGlobalExitRoot = await supernets2GlobalExitRoot.getLastGlobalExitRoot();
+        const lastGlobalExitRoot = await PolygonZkEVMGlobalExitRoot.getLastGlobalExitRoot();
 
         await expect(
             maticTokenContract.approve(supernets2Contract.address, maticAmount),

@@ -202,7 +202,7 @@ describe('Supernets2 Deployer', () => {
     });
     it('Test Bridge deployment', async () => {
         const bridgeFactory = await ethers.getContractFactory(
-            'Supernets2Bridge',
+            'PolygonZkEVMBridge',
         );
 
         const salt = ethers.constants.HashZero;

@@ -77,8 +77,8 @@ async function main() {
     const [proxyAdminAddress] = await create2Deployment(supernets2DeployerContract, salt, deployTransactionAdmin, dataCallAdmin, deployer);
 
     // Deploy implementation Supernets2Bridg
-    const supernets2BridgeFactory = await ethers.getContractFactory('Supernets2Bridge', deployer);
-    const deployTransactionBridge = (supernets2BridgeFactory.getDeployTransaction()).data;
+    const PolygonZkEVMBridgeFactory = await ethers.getContractFactory('PolygonZkEVMBridge', deployer);
+    const deployTransactionBridge = (PolygonZkEVMBridgeFactory.getDeployTransaction()).data;
     // Mandatory to override the gasLimit since the estimation with create are mess up D:
     const overrideGasLimit = ethers.BigNumber.from(5500000);
     const [bridgeImplementationAddress] = await create2Deployment(
@@ -102,7 +102,7 @@ async function main() {
         initializeEmptyDataProxy,
     )).data;
 
-    const dataCallProxy = supernets2BridgeFactory.interface.encodeFunctionData(
+    const dataCallProxy = PolygonZkEVMBridgeFactory.interface.encodeFunctionData(
         'initialize',
         [
             networkIDL2,
@@ -113,16 +113,16 @@ async function main() {
     const [proxyBridgeAddress] = await create2Deployment(supernets2DeployerContract, salt, deployTransactionProxy, dataCallProxy, deployer);
 
     // Import OZ manifest the deployed contracts, its enough to import just the proyx, the rest are imported automatically ( admin/impl)
-    await upgrades.forceImport(proxyBridgeAddress, supernets2BridgeFactory, 'transparent');
+    await upgrades.forceImport(proxyBridgeAddress, PolygonZkEVMBridgeFactory, 'transparent');
 
     /*
      *Deployment Global exit root manager
      */
-    const Supernets2GlobalExitRootL2Factory = await ethers.getContractFactory('Supernets2GlobalExitRootL2', deployer);
-    let supernets2GlobalExitRootL2;
+    const PolygonZkEVMGlobalExitRootL2Factory = await ethers.getContractFactory('PolygonZkEVMGlobalExitRootL2', deployer);
+    let PolygonZkEVMGlobalExitRootL2;
     for (let i = 0; i < attemptsDeployProxy; i++) {
         try {
-            supernets2GlobalExitRootL2 = await upgrades.deployProxy(Supernets2GlobalExitRootL2Factory, [], {
+            PolygonZkEVMGlobalExitRootL2 = await upgrades.deployProxy(PolygonZkEVMGlobalExitRootL2Factory, [], {
                 initializer: false,
                 constructorArgs: [proxyBridgeAddress],
                 unsafeAllow: ['constructor', 'state-variable-immutable'],
@@ -130,17 +130,17 @@ async function main() {
             break;
         } catch (error) {
             console.log(`attempt ${i}`);
-            console.log('upgrades.deployProxy of supernets2GlobalExitRootL2 ', error.message);
+            console.log('upgrades.deployProxy of PolygonZkEVMGlobalExitRootL2 ', error.message);
         }
 
         // reach limits of attempts
         if (i + 1 === attemptsDeployProxy) {
-            throw new Error('supernets2GlobalExitRootL2 contract has not been deployed');
+            throw new Error('PolygonZkEVMGlobalExitRootL2 contract has not been deployed');
         }
     }
 
     // Assert admin address
-    expect(await upgrades.erc1967.getAdminAddress(supernets2GlobalExitRootL2.address)).to.be.equal(proxyAdminAddress);
+    expect(await upgrades.erc1967.getAdminAddress(PolygonZkEVMGlobalExitRootL2.address)).to.be.equal(proxyAdminAddress);
     expect(await upgrades.erc1967.getAdminAddress(proxyBridgeAddress)).to.be.equal(proxyAdminAddress);
 
     const timelockContractFactory = await ethers.getContractFactory('Supernets2Timelock', deployer);
@@ -185,7 +185,7 @@ async function main() {
     // Bridge implementation
     const bridgeImplementationInfo = await getAddressInfo(bridgeImplementationAddress);
     genesis.push({
-        contractName: 'Supernets2Bridge implementation',
+        contractName: 'PolygonZkEVMBridge implementation',
         balance: '0',
         nonce: bridgeImplementationInfo.nonce.toString(),
         address: bridgeImplementationAddress,
@@ -197,7 +197,7 @@ async function main() {
     const bridgeProxyInfo = await getAddressInfo(proxyBridgeAddress);
 
     genesis.push({
-        contractName: 'Supernets2Bridge proxy',
+        contractName: 'PolygonZkEVMBridge proxy',
         balance: '200000000000000000000000000',
         nonce: bridgeProxyInfo.nonce.toString(),
         address: proxyBridgeAddress,
@@ -205,11 +205,11 @@ async function main() {
         storage: bridgeProxyInfo.storage,
     });
 
-    // supernets2GlobalExitRootL2 implementation
-    const implGlobalExitRootL2 = await upgrades.erc1967.getImplementationAddress(supernets2GlobalExitRootL2.address);
+    // PolygonZkEVMGlobalExitRootL2 implementation
+    const implGlobalExitRootL2 = await upgrades.erc1967.getImplementationAddress(PolygonZkEVMGlobalExitRootL2.address);
     const implGlobalExitRootL2Info = await getAddressInfo(implGlobalExitRootL2);
     genesis.push({
-        contractName: 'Supernets2GlobalExitRootL2 implementation',
+        contractName: 'PolygonZkEVMGlobalExitRootL2 implementation',
         balance: '0',
         nonce: implGlobalExitRootL2Info.nonce.toString(),
         address: implGlobalExitRootL2,
@@ -217,10 +217,10 @@ async function main() {
         // storage: implGlobalExitRootL2Info.storage, , implementation do not have storage
     });
 
-    // supernets2GlobalExitRootL2 proxy
-    const proxyGlobalExitRootL2Info = await getAddressInfo(supernets2GlobalExitRootL2.address);
+    // PolygonZkEVMGlobalExitRootL2 proxy
+    const proxyGlobalExitRootL2Info = await getAddressInfo(PolygonZkEVMGlobalExitRootL2.address);
     genesis.push({
-        contractName: 'Supernets2GlobalExitRootL2 proxy',
+        contractName: 'PolygonZkEVMGlobalExitRootL2 proxy',
         balance: '0',
         nonce: proxyGlobalExitRootL2Info.nonce.toString(),
         address: globalExitRootL2Address, // Override address!

@@ -182,9 +182,9 @@ async function main() {
         console.log('Proxy admin was already deployed to:', proxyAdminAddress);
     }
 
-    // Deploy implementation Supernets2Bridge
-    const supernets2BridgeFactory = await ethers.getContractFactory('Supernets2Bridge', deployer);
-    const deployTransactionBridge = (supernets2BridgeFactory.getDeployTransaction()).data;
+    // Deploy implementation PolygonZkEVMBridge
+    const PolygonZkEVMBridgeFactory = await ethers.getContractFactory('PolygonZkEVMBridge', deployer);
+    const deployTransactionBridge = (PolygonZkEVMBridgeFactory.getDeployTransaction()).data;
     const dataCallNull = null;
     // Mandatory to override the gasLimit since the estimation with create are mess up D:
     const overrideGasLimit = ethers.BigNumber.from(5500000);
@@ -231,12 +231,12 @@ async function main() {
         precalculateSupernets2Address;
 
     // Check if the contract is already deployed
-    if (ongoingDeployment.supernets2GlobalExitRoot && ongoingDeployment.supernets2Contract) {
-        precalculateGLobalExitRootAddress = ongoingDeployment.supernets2GlobalExitRoot;
+    if (ongoingDeployment.PolygonZkEVMGlobalExitRoot && ongoingDeployment.supernets2Contract) {
+        precalculateGLobalExitRootAddress = ongoingDeployment.PolygonZkEVMGlobalExitRoot;
         precalculateSupernets2Address = ongoingDeployment.supernets2Contract;
     } else {
         // If both are not deployed, it's better to deploy them both again
-        delete ongoingDeployment.supernets2GlobalExitRoot;
+        delete ongoingDeployment.PolygonZkEVMGlobalExitRoot;
         delete ongoingDeployment.supernets2Contract;
         fs.writeFileSync(pathOngoingDeploymentJson, JSON.stringify(ongoingDeployment, null, 1));
 
@@ -245,7 +245,7 @@ async function main() {
         precalculateSupernets2Address = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxySupernets2 });
     }
 
-    const dataCallProxy = supernets2BridgeFactory.interface.encodeFunctionData(
+    const dataCallProxy = PolygonZkEVMBridgeFactory.interface.encodeFunctionData(
         'initialize',
         [
             networkIDMainnet,
@@ -260,29 +260,29 @@ async function main() {
         dataCallProxy,
         deployer,
     );
-    const supernets2BridgeContract = supernets2BridgeFactory.attach(proxyBridgeAddress);
+    const PolygonZkEVMBridgeContract = PolygonZkEVMBridgeFactory.attach(proxyBridgeAddress);
 
     if (isBridgeProxyDeployed) {
         console.log('#######################\n');
-        console.log('Supernets2Bridge deployed to:', supernets2BridgeContract.address);
+        console.log('PolygonZkEVMBridge deployed to:', PolygonZkEVMBridgeContract.address);
     } else {
         console.log('#######################\n');
-        console.log('Supernets2Bridge was already deployed to:', supernets2BridgeContract.address);
+        console.log('PolygonZkEVMBridge was already deployed to:', PolygonZkEVMBridgeContract.address);
 
         // If it was already deployed, check that the initialized calldata matches the actual deployment
-        expect(precalculateGLobalExitRootAddress).to.be.equal(await supernets2BridgeContract.globalExitRootManager());
-        expect(precalculateSupernets2Address).to.be.equal(await supernets2BridgeContract.supernets2address());
+        expect(precalculateGLobalExitRootAddress).to.be.equal(await PolygonZkEVMBridgeContract.globalExitRootManager());
+        expect(precalculateSupernets2Address).to.be.equal(await PolygonZkEVMBridgeContract.polygonZkEVMaddress());
     }
 
     console.log('\n#######################');
-    console.log('#####    Checks Supernets2Bridge   #####');
+    console.log('#####    Checks PolygonZkEVMBridge   #####');
     console.log('#######################');
-    console.log('Supernets2GlobalExitRootAddress:', await supernets2BridgeContract.globalExitRootManager());
-    console.log('networkID:', await supernets2BridgeContract.networkID());
-    console.log('supernets2address:', await supernets2BridgeContract.supernets2address());
+    console.log('PolygonZkEVMGlobalExitRootAddress:', await PolygonZkEVMBridgeContract.globalExitRootManager());
+    console.log('networkID:', await PolygonZkEVMBridgeContract.networkID());
+    console.log('supernets2address:', await PolygonZkEVMBridgeContract.polygonZkEVMaddress());
 
     // Import OZ manifest the deployed contracts, its enough to import just the proxy, the rest are imported automatically (admin/impl)
-    await upgrades.forceImport(proxyBridgeAddress, supernets2BridgeFactory, 'transparent');
+    await upgrades.forceImport(proxyBridgeAddress, PolygonZkEVMBridgeFactory, 'transparent');
 
     /*
      * Deployment Data Committee
@@ -322,12 +322,12 @@ async function main() {
     /*
      *Deployment Global exit root manager
      */
-    let supernets2GlobalExitRoot;
-    const Supernets2GlobalExitRootFactory = await ethers.getContractFactory('Supernets2GlobalExitRoot', deployer);
-    if (!ongoingDeployment.supernets2GlobalExitRoot) {
+    let PolygonZkEVMGlobalExitRoot;
+    const PolygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory('PolygonZkEVMGlobalExitRoot', deployer);
+    if (!ongoingDeployment.PolygonZkEVMGlobalExitRoot) {
         for (let i = 0; i < attemptsDeployProxy; i++) {
             try {
-                supernets2GlobalExitRoot = await upgrades.deployProxy(Supernets2GlobalExitRootFactory, [], {
+                PolygonZkEVMGlobalExitRoot = await upgrades.deployProxy(PolygonZkEVMGlobalExitRootFactory, [], {
                     initializer: false,
                     constructorArgs: [precalculateSupernets2Address, proxyBridgeAddress],
                     unsafeAllow: ['constructor', 'state-variable-immutable'],
@@ -335,38 +335,38 @@ async function main() {
                 break;
             } catch (error) {
                 console.log(`attempt ${i}`);
-                console.log('upgrades.deployProxy of supernets2GlobalExitRoot ', error.message);
+                console.log('upgrades.deployProxy of PolygonZkEVMGlobalExitRoot ', error.message);
             }
 
             // reach limits of attempts
             if (i + 1 === attemptsDeployProxy) {
-                throw new Error('supernets2GlobalExitRoot contract has not been deployed');
+                throw new Error('PolygonZkEVMGlobalExitRoot contract has not been deployed');
             }
         }
 
-        expect(precalculateGLobalExitRootAddress).to.be.equal(supernets2GlobalExitRoot.address);
+        expect(precalculateGLobalExitRootAddress).to.be.equal(PolygonZkEVMGlobalExitRoot.address);
 
         console.log('#######################\n');
-        console.log('supernets2GlobalExitRoot deployed to:', supernets2GlobalExitRoot.address);
+        console.log('PolygonZkEVMGlobalExitRoot deployed to:', PolygonZkEVMGlobalExitRoot.address);
 
         // save an ongoing deployment
-        ongoingDeployment.supernets2GlobalExitRoot = supernets2GlobalExitRoot.address;
+        ongoingDeployment.PolygonZkEVMGlobalExitRoot = PolygonZkEVMGlobalExitRoot.address;
         fs.writeFileSync(pathOngoingDeploymentJson, JSON.stringify(ongoingDeployment, null, 1));
     } else {
         // sanity check
-        expect(precalculateGLobalExitRootAddress).to.be.equal(supernets2GlobalExitRoot.address);
+        expect(precalculateGLobalExitRootAddress).to.be.equal(PolygonZkEVMGlobalExitRoot.address);
         // Expect the precalculate address matches de onogin deployment
-        supernets2GlobalExitRoot = Supernets2GlobalExitRootFactory.attach(ongoingDeployment.supernets2GlobalExitRoot);
+        PolygonZkEVMGlobalExitRoot = PolygonZkEVMGlobalExitRootFactory.attach(ongoingDeployment.PolygonZkEVMGlobalExitRoot);
 
         console.log('#######################\n');
-        console.log('supernets2GlobalExitRoot already deployed on: ', ongoingDeployment.supernets2GlobalExitRoot);
+        console.log('PolygonZkEVMGlobalExitRoot already deployed on: ', ongoingDeployment.PolygonZkEVMGlobalExitRoot);
 
         // Import OZ manifest the deployed contracts, its enough to import just the proyx, the rest are imported automatically (admin/impl)
-        await upgrades.forceImport(ongoingDeployment.supernets2GlobalExitRoot, Supernets2GlobalExitRootFactory, 'transparent');
+        await upgrades.forceImport(ongoingDeployment.PolygonZkEVMGlobalExitRoot, PolygonZkEVMGlobalExitRootFactory, 'transparent');
 
         // Check against current deployment
-        expect(supernets2BridgeContract.address).to.be.equal(await supernets2BridgeContract.bridgeAddress());
-        expect(precalculateSupernets2Address).to.be.equal(await supernets2BridgeContract.rollupAddress());
+        expect(PolygonZkEVMBridgeContract.address).to.be.equal(await PolygonZkEVMBridgeContract.bridgeAddress());
+        expect(precalculateSupernets2Address).to.be.equal(await PolygonZkEVMBridgeContract.rollupAddress());
     }
 
     // deploy Supernets2M
@@ -376,10 +376,10 @@ async function main() {
     console.log('##### Deployment Supernets2 #####');
     console.log('#######################');
     console.log('deployer:', deployer.address);
-    console.log('Supernets2GlobalExitRootAddress:', supernets2GlobalExitRoot.address);
+    console.log('PolygonZkEVMGlobalExitRootAddress:', PolygonZkEVMGlobalExitRoot.address);
     console.log('maticTokenAddress:', maticTokenAddress);
     console.log('verifierAddress:', verifierContract.address);
-    console.log('supernets2BridgeContract:', supernets2BridgeContract.address);
+    console.log('PolygonZkEVMBridgeContract:', PolygonZkEVMBridgeContract.address);
 
     console.log('admin:', admin);
     console.log('chainID:', chainID);
@@ -417,10 +417,10 @@ async function main() {
                     ],
                     {
                         constructorArgs: [
-                            supernets2GlobalExitRoot.address,
+                            PolygonZkEVMGlobalExitRoot.address,
                             maticTokenAddress,
                             verifierContract.address,
-                            supernets2BridgeContract.address,
+                            PolygonZkEVMBridgeContract.address,
                             supernets2DataCommitteeContract.address,
                             chainID,
                             forkID,
@@ -481,10 +481,10 @@ async function main() {
     console.log('\n#######################');
     console.log('#####    Checks  Supernets2  #####');
     console.log('#######################');
-    console.log('Supernets2GlobalExitRootAddress:', await supernets2Contract.globalExitRootManager());
+    console.log('PolygonZkEVMGlobalExitRootAddress:', await supernets2Contract.globalExitRootManager());
     console.log('maticTokenAddress:', await supernets2Contract.matic());
     console.log('verifierAddress:', await supernets2Contract.rollupVerifier());
-    console.log('supernets2BridgeContract:', await supernets2Contract.bridgeAddress());
+    console.log('PolygonZkEVMBridgeContract:', await supernets2Contract.bridgeAddress());
 
     console.log('admin:', await supernets2Contract.admin());
     console.log('chainID:', await supernets2Contract.chainID());
@@ -559,8 +559,8 @@ async function main() {
 
     const outputJson = {
         supernets2Address: supernets2Contract.address,
-        supernets2BridgeAddress: supernets2BridgeContract.address,
-        supernets2GlobalExitRootAddress: supernets2GlobalExitRoot.address,
+        PolygonZkEVMBridgeAddress: PolygonZkEVMBridgeContract.address,
+        PolygonZkEVMGlobalExitRootAddress: PolygonZkEVMGlobalExitRoot.address,
         supernets2DataCommitteeContract: supernets2DataCommitteeContract.address,
         maticTokenAddress,
         verifierAddress: verifierContract.address,

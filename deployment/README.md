@@ -30,8 +30,8 @@ The value is on `100 gweis`, if it's necessary to update it go to `helpers/deplo
 Note that this operation will change all the deterministic address deployed.
 
 ```
-npm run deploy:deployer:Supernets2:goerli
-npm run verify:deployer:Supernets2:goerli
+npm run deploy:deployer:Supernets2:sepolia
+npm run verify:deployer:Supernets2:sepolia
 ```
 
 To deploy on testnet is necessary a token MATIC contract, therefore, there's another script that previously to the actual deployment, deploys a matic contracts and adds it automatically to the `deploy_parameters.json`
@@ -41,14 +41,14 @@ To deploy on testnet use:`deploy:testnet:Supernets2:${network}`
 In other cases use fullfill `maticTokenAddress` in the `deploy_parameters.json` and run `deploy:Supernets2:${network}`
 
 ```
-npm run deploy:testnet:Supernets2:goerli
+npm run deploy:testnet:Supernets2:sepolia
 
 ```
 
 To verify contracts use `npm run verify:Supernets2:${network}`
 
 ```
-npm run verify:Supernets2:goerli
+npm run verify:Supernets2:sepolia
 ```
 
 A new folder will be created witth the following name `deployments/${network}_$(date +%s)` with all the output information and the OZ proxy information.
@@ -69,10 +69,10 @@ A new folder will be created witth the following name `deployments/${network}_$(
 - `supernets2Owner`: address, Able to put the Supernets2 into emergency state (kill switch)
 - `timelockAddress`: address, Timelock owner address, able to send start an upgradability process via timelock
 - `minDelayTimelock`: number, Minimum timelock delay,
-- `salt`: bytes32, Salt used in `Supernets2Deployer` to deploy deterministic contracts, such as the Supernets2Bridge
+- `salt`: bytes32, Salt used in `Supernets2Deployer` to deploy deterministic contracts, such as the PolygonZkEVMBridge
 - `initialSupernets2DeployerOwner`: address, Initial owner of the `Supernets2Deployer`
 - `maticTokenAddress`: address, Matic token address, only if deploy on testnet can be left blank and will fullfilled by the scripts.
-- `supernets2DeployerAddress`: address, Address of the `Supernets2Deployer`. Can be left blank, will be fullfilled automatically with the `deploy:deployer:Supernets2:goerli` script.
+- `supernets2DeployerAddress`: address, Address of the `Supernets2Deployer`. Can be left blank, will be fullfilled automatically with the `deploy:deployer:Supernets2:sepolia` script.
 
 ### Optional Parameters
 

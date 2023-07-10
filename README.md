@@ -16,9 +16,9 @@ Private keys and mnemonics contained in this repository are used for internal te
 ## Repository structure
 
 - `contracts`: supenrets2 contracts
-  - `Supernets2Bridge.sol`: transfer assets between chains
-    - `Supernets2GlobalExitRoot.sol`: manage global exit root in L1
-    - `Supernets2GlobalExitRootL2.sol`: manage global exit root in L2
+  - `PolygonZkEVMBridge.sol`: transfer assets between chains
+    - `PolygonZkEVMGlobalExitRoot.sol`: manage global exit root in L1
+    - `PolygonZkEVMGlobalExitRootL2.sol`: manage global exit root in L2
   - `Supernets2.sol`: consensus algorithm used by supernets2
 - `docs`: specs and useful links
 - `test`: contracts tests

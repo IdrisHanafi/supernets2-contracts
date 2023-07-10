@@ -1,4 +1,4 @@
-Supernets2Bridge that will be deployed on both networks Ethereum and Supernets2
+PolygonZkEVMBridge that will be deployed on both networks Ethereum and Polygon zkEVM
 Contract responsible to manage the token interactions with other networks
 
 
@@ -7,19 +7,19 @@ Contract responsible to manage the token interactions with other networks
 ```solidity
   function initialize(
     uint32 _networkID,
-    contract IBaseSupernets2GlobalExitRoot _globalExitRootManager,
-    address _supernets2address
+    contract IBasePolygonZkEVMGlobalExitRoot _globalExitRootManager,
+    address _polygonZkEVMaddress
   ) external
 ```
-The value of `_supernets2address` on the L2 deployment of the contract will be address(0), so
+The value of `_polygonZkEVMaddress` on the L2 deployment of the contract will be address(0), so
 emergency state is not possible for the L2 deployment of the bridge, intentionally
 
 #### Parameters:
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`_networkID` | uint32 | networkID
-|`_globalExitRootManager` | contract IBaseSupernets2GlobalExitRoot | global exit root manager address
-|`_supernets2address` | address | supernets2 address
+|`_globalExitRootManager` | contract IBasePolygonZkEVMGlobalExitRoot | global exit root manager address
+|`_polygonZkEVMaddress` | address | polygonZkEVM address
 
 
 ### bridgeAsset
@@ -180,7 +180,7 @@ Returns the address of a wrapper using the token information if already exist
   ) external
 ```
 Function to activate the emergency state
-     " Only can be called by the Supernets2 in extreme situations
+     " Only can be called by the Polygon ZK-EVM in extreme situations
 
 
 
@@ -190,7 +190,7 @@ Function to activate the emergency state
   ) external
 ```
 Function to deactivate the emergency state
-     " Only can be called by the Supernets2
+     " Only can be called by the Polygon ZK-EVM
 
 
 

@@ -10,13 +10,13 @@ function calculateGlobalExitRoot(mainnetExitRoot, rollupExitRoot) {
     return ethers.utils.solidityKeccak256(['bytes32', 'bytes32'], [mainnetExitRoot, rollupExitRoot]);
 }
 
-describe('Supernets2Bridge Contract', () => {
+describe('PolygonZkEVMBridge Contract', () => {
     let deployer;
     let rollup;
     let acc1;
 
-    let supernets2GlobalExitRoot;
-    let supernets2BridgeContract;
+    let polygonZkEVMGlobalExitRoot;
+    let polygonZkEVMBridgeContract;
     let tokenContract;
 
     const tokenName = 'Matic Token';
@@ -34,21 +34,21 @@ describe('Supernets2Bridge Contract', () => {
     const LEAF_TYPE_ASSET = 0;
     const LEAF_TYPE_MESSAGE = 1;
 
-    const supernets2Address = ethers.constants.AddressZero;
+    const polygonZkEVMAddress = ethers.constants.AddressZero;
 
     beforeEach('Deploy contracts', async () => {
         // load signers
         [deployer, rollup, acc1] = await ethers.getSigners();
 
-        // deploy Supernets2Bridge
-        const supernets2BridgeFactory = await ethers.getContractFactory('Supernets2Bridge');
-        supernets2BridgeContract = await upgrades.deployProxy(supernets2BridgeFactory, [], { initializer: false });
+        // deploy PolygonZkEVMBridge
+        const polygonZkEVMBridgeFactory = await ethers.getContractFactory('PolygonZkEVMBridge');
+        polygonZkEVMBridgeContract = await upgrades.deployProxy(polygonZkEVMBridgeFactory, [], { initializer: false });
 
         // deploy global exit root manager
-        const Supernets2GlobalExitRootFactory = await ethers.getContractFactory('Supernets2GlobalExitRoot');
-        supernets2GlobalExitRoot = await Supernets2GlobalExitRootFactory.deploy(rollup.address, supernets2BridgeContract.address);
+        const PolygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory('PolygonZkEVMGlobalExitRoot');
+        polygonZkEVMGlobalExitRoot = await PolygonZkEVMGlobalExitRootFactory.deploy(rollup.address, polygonZkEVMBridgeContract.address);
 
-        await supernets2BridgeContract.initialize(networkIDMainnet, supernets2GlobalExitRoot.address, supernets2Address);
+        await polygonZkEVMBridgeContract.initialize(networkIDMainnet, polygonZkEVMGlobalExitRoot.address, polygonZkEVMAddress);
 
         // deploy token
         const maticTokenFactory = await ethers.getContractFactory('ERC20PermitMock');
@@ -62,13 +62,13 @@ describe('Supernets2Bridge Contract', () => {
     });
 
     it('should check the constructor parameters', async () => {
-        expect(await supernets2BridgeContract.globalExitRootManager()).to.be.equal(supernets2GlobalExitRoot.address);
-        expect(await supernets2BridgeContract.networkID()).to.be.equal(networkIDMainnet);
-        expect(await supernets2BridgeContract.supernets2address()).to.be.equal(supernets2Address);
+        expect(await polygonZkEVMBridgeContract.globalExitRootManager()).to.be.equal(polygonZkEVMGlobalExitRoot.address);
+        expect(await polygonZkEVMBridgeContract.networkID()).to.be.equal(networkIDMainnet);
+        expect(await polygonZkEVMBridgeContract.polygonZkEVMaddress()).to.be.equal(polygonZkEVMAddress);
     });
 
-    it('should Supernets2 bridge asset and verify merkle proof', async () => {
-        const depositCount = await supernets2BridgeContract.depositCount();
+    it('should PolygonZkEVM bridge asset and verify merkle proof', async () => {
+        const depositCount = await polygonZkEVMBridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const tokenAddress = tokenContract.address;
         const amount = ethers.utils.parseEther('10');
@@ -79,14 +79,14 @@ describe('Supernets2Bridge Contract', () => {
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
 
         const balanceDeployer = await tokenContract.balanceOf(deployer.address);
-        const balanceBridge = await tokenContract.balanceOf(supernets2BridgeContract.address);
+        const balanceBridge = await tokenContract.balanceOf(polygonZkEVMBridgeContract.address);
 
-        const rollupExitRoot = await supernets2GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRoot = await polygonZkEVMGlobalExitRoot.lastRollupExitRoot();
 
         // create a new deposit
-        await expect(tokenContract.approve(supernets2BridgeContract.address, amount))
+        await expect(tokenContract.approve(polygonZkEVMBridgeContract.address, amount))
             .to.emit(tokenContract, 'Approval')
-            .withArgs(deployer.address, supernets2BridgeContract.address, amount);
+            .withArgs(deployer.address, polygonZkEVMBridgeContract.address, amount);
 
         // pre compute root merkle tree in Js
         const height = 32;
@@ -104,7 +104,7 @@ describe('Supernets2Bridge Contract', () => {
         const rootJSMainnet = merkleTree.getRoot();
 
         // check requires
-        await expect(supernets2BridgeContract.bridgeAsset(
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(
             2,
             destinationAddress,
             amount,
@@ -113,7 +113,7 @@ describe('Supernets2Bridge Contract', () => {
             '0x',
         )).to.be.revertedWith('DestinationNetworkInvalid');
 
-        await expect(supernets2BridgeContract.bridgeAsset(
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(
             destinationNetwork,
             destinationAddress,
             amount,
@@ -123,18 +123,18 @@ describe('Supernets2Bridge Contract', () => {
             { value: 1 },
         )).to.be.revertedWith('MsgValueNotZero');
 
-        await expect(supernets2BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
-            .to.emit(supernets2BridgeContract, 'BridgeEvent')
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, true, '0x'))
+            .to.emit(polygonZkEVMBridgeContract, 'BridgeEvent')
             .withArgs(LEAF_TYPE_ASSET, originNetwork, tokenAddress, destinationNetwork, destinationAddress, amount, metadata, depositCount)
-            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
+            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(rootJSMainnet, rollupExitRoot);
 
         expect(await tokenContract.balanceOf(deployer.address)).to.be.equal(balanceDeployer.sub(amount));
-        expect(await tokenContract.balanceOf(supernets2BridgeContract.address)).to.be.equal(balanceBridge.add(amount));
-        expect(await supernets2BridgeContract.lastUpdatedDepositCount()).to.be.equal(1);
+        expect(await tokenContract.balanceOf(polygonZkEVMBridgeContract.address)).to.be.equal(balanceBridge.add(amount));
+        expect(await polygonZkEVMBridgeContract.lastUpdatedDepositCount()).to.be.equal(1);
 
         // check merkle root with SC
-        const rootSCMainnet = await supernets2BridgeContract.getDepositRoot();
+        const rootSCMainnet = await polygonZkEVMBridgeContract.getDepositRoot();
         expect(rootSCMainnet).to.be.equal(rootJSMainnet);
 
         // check merkle proof
@@ -143,7 +143,7 @@ describe('Supernets2Bridge Contract', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proof, index, rootSCMainnet)).to.be.equal(true);
-        expect(await supernets2BridgeContract.verifyMerkleProof(
+        expect(await polygonZkEVMBridgeContract.verifyMerkleProof(
             leafValue,
             proof,
             index,
@@ -151,11 +151,11 @@ describe('Supernets2Bridge Contract', () => {
         )).to.be.equal(true);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(rootJSMainnet, rollupExitRoot);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot());
     });
 
-    it('should Supernets2Bridge message and verify merkle proof', async () => {
-        const depositCount = await supernets2BridgeContract.depositCount();
+    it('should PolygonZkEVMBridge message and verify merkle proof', async () => {
+        const depositCount = await polygonZkEVMBridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const originAddress = deployer.address;
         const amount = ethers.utils.parseEther('10');
@@ -164,7 +164,7 @@ describe('Supernets2Bridge Contract', () => {
 
         const metadata = metadataToken;
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
-        const rollupExitRoot = await supernets2GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRoot = await polygonZkEVMGlobalExitRoot.lastRollupExitRoot();
 
         // pre compute root merkle tree in Js
         const height = 32;
@@ -181,8 +181,8 @@ describe('Supernets2Bridge Contract', () => {
         merkleTree.add(leafValue);
         const rootJSMainnet = merkleTree.getRoot();
 
-        await expect(supernets2BridgeContract.bridgeMessage(destinationNetwork, destinationAddress, true, metadata, { value: amount }))
-            .to.emit(supernets2BridgeContract, 'BridgeEvent')
+        await expect(polygonZkEVMBridgeContract.bridgeMessage(destinationNetwork, destinationAddress, true, metadata, { value: amount }))
+            .to.emit(polygonZkEVMBridgeContract, 'BridgeEvent')
             .withArgs(
                 LEAF_TYPE_MESSAGE,
                 originNetwork,
@@ -195,7 +195,7 @@ describe('Supernets2Bridge Contract', () => {
             );
 
         // check merkle root with SC
-        const rootSCMainnet = await supernets2BridgeContract.getDepositRoot();
+        const rootSCMainnet = await polygonZkEVMBridgeContract.getDepositRoot();
         expect(rootSCMainnet).to.be.equal(rootJSMainnet);
 
         // check merkle proof
@@ -204,7 +204,7 @@ describe('Supernets2Bridge Contract', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proof, index, rootSCMainnet)).to.be.equal(true);
-        expect(await supernets2BridgeContract.verifyMerkleProof(
+        expect(await polygonZkEVMBridgeContract.verifyMerkleProof(
             leafValue,
             proof,
             index,
@@ -212,11 +212,11 @@ describe('Supernets2Bridge Contract', () => {
         )).to.be.equal(true);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(rootJSMainnet, rollupExitRoot);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot());
     });
 
-    it('should Supernets2 bridge asset and message to check global exit root updates', async () => {
-        const depositCount = await supernets2BridgeContract.depositCount();
+    it('should PolygonZkEVM bridge asset and message to check global exit root updates', async () => {
+        const depositCount = await polygonZkEVMBridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const tokenAddress = tokenContract.address;
         const amount = ethers.utils.parseEther('10');
@@ -227,14 +227,14 @@ describe('Supernets2Bridge Contract', () => {
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
 
         const balanceDeployer = await tokenContract.balanceOf(deployer.address);
-        const balanceBridge = await tokenContract.balanceOf(supernets2BridgeContract.address);
+        const balanceBridge = await tokenContract.balanceOf(polygonZkEVMBridgeContract.address);
 
-        const rollupExitRoot = await supernets2GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRoot = await polygonZkEVMGlobalExitRoot.lastRollupExitRoot();
 
         // create a new deposit
-        await expect(tokenContract.approve(supernets2BridgeContract.address, amount))
+        await expect(tokenContract.approve(polygonZkEVMBridgeContract.address, amount))
             .to.emit(tokenContract, 'Approval')
-            .withArgs(deployer.address, supernets2BridgeContract.address, amount);
+            .withArgs(deployer.address, polygonZkEVMBridgeContract.address, amount);
 
         // pre compute root merkle tree in Js
         const height = 32;
@@ -251,35 +251,35 @@ describe('Supernets2Bridge Contract', () => {
         merkleTree.add(leafValue);
         const rootJSMainnet = merkleTree.getRoot();
 
-        await expect(supernets2BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, false, '0x'))
-            .to.emit(supernets2BridgeContract, 'BridgeEvent')
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount, tokenAddress, false, '0x'))
+            .to.emit(polygonZkEVMBridgeContract, 'BridgeEvent')
             .withArgs(LEAF_TYPE_ASSET, originNetwork, tokenAddress, destinationNetwork, destinationAddress, amount, metadata, depositCount);
 
         expect(await tokenContract.balanceOf(deployer.address)).to.be.equal(balanceDeployer.sub(amount));
-        expect(await tokenContract.balanceOf(supernets2BridgeContract.address)).to.be.equal(balanceBridge.add(amount));
-        expect(await supernets2BridgeContract.lastUpdatedDepositCount()).to.be.equal(0);
-        expect(await supernets2GlobalExitRoot.lastMainnetExitRoot()).to.be.equal(ethers.constants.HashZero);
+        expect(await tokenContract.balanceOf(polygonZkEVMBridgeContract.address)).to.be.equal(balanceBridge.add(amount));
+        expect(await polygonZkEVMBridgeContract.lastUpdatedDepositCount()).to.be.equal(0);
+        expect(await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot()).to.be.equal(ethers.constants.HashZero);
 
         // check merkle root with SC
-        const rootSCMainnet = await supernets2BridgeContract.getDepositRoot();
+        const rootSCMainnet = await polygonZkEVMBridgeContract.getDepositRoot();
         expect(rootSCMainnet).to.be.equal(rootJSMainnet);
 
         // Update global exit root
-        await expect(supernets2BridgeContract.updateGlobalExitRoot())
-            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
+        await expect(polygonZkEVMBridgeContract.updateGlobalExitRoot())
+            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(rootJSMainnet, rollupExitRoot);
 
         // no state changes since there are not any deposit pending to be updated
-        await supernets2BridgeContract.updateGlobalExitRoot();
-        expect(await supernets2BridgeContract.lastUpdatedDepositCount()).to.be.equal(1);
-        expect(await supernets2GlobalExitRoot.lastMainnetExitRoot()).to.be.equal(rootJSMainnet);
+        await polygonZkEVMBridgeContract.updateGlobalExitRoot();
+        expect(await polygonZkEVMBridgeContract.lastUpdatedDepositCount()).to.be.equal(1);
+        expect(await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot()).to.be.equal(rootJSMainnet);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(rootJSMainnet, rollupExitRoot);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot());
 
         // bridge message
-        await expect(supernets2BridgeContract.bridgeMessage(destinationNetwork, destinationAddress, false, metadata, { value: amount }))
-            .to.emit(supernets2BridgeContract, 'BridgeEvent')
+        await expect(polygonZkEVMBridgeContract.bridgeMessage(destinationNetwork, destinationAddress, false, metadata, { value: amount }))
+            .to.emit(polygonZkEVMBridgeContract, 'BridgeEvent')
             .withArgs(
                 LEAF_TYPE_MESSAGE,
                 originNetwork,
@@ -290,20 +290,20 @@ describe('Supernets2Bridge Contract', () => {
                 metadata,
                 1,
             );
-        expect(await supernets2BridgeContract.lastUpdatedDepositCount()).to.be.equal(1);
-        expect(await supernets2GlobalExitRoot.lastMainnetExitRoot()).to.be.equal(rootJSMainnet);
+        expect(await polygonZkEVMBridgeContract.lastUpdatedDepositCount()).to.be.equal(1);
+        expect(await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot()).to.be.equal(rootJSMainnet);
 
         // Update global exit root
-        await expect(supernets2BridgeContract.updateGlobalExitRoot())
-            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot');
+        await expect(polygonZkEVMBridgeContract.updateGlobalExitRoot())
+            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot');
 
-        expect(await supernets2BridgeContract.lastUpdatedDepositCount()).to.be.equal(2);
-        expect(await supernets2GlobalExitRoot.lastMainnetExitRoot()).to.not.be.equal(rootJSMainnet);
+        expect(await polygonZkEVMBridgeContract.lastUpdatedDepositCount()).to.be.equal(2);
+        expect(await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot()).to.not.be.equal(rootJSMainnet);
 
         // Just to have the metric of a low cost bridge Asset
         const tokenAddress2 = ethers.constants.AddressZero; // Ether
         const amount2 = ethers.utils.parseEther('10');
-        await supernets2BridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount2, tokenAddress2, false, '0x', { value: amount2 });
+        await polygonZkEVMBridgeContract.bridgeAsset(destinationNetwork, destinationAddress, amount2, tokenAddress2, false, '0x', { value: amount2 });
     });
 
     it('should claim tokens from Mainnet to Mainnet', async () => {
@@ -316,7 +316,7 @@ describe('Supernets2Bridge Contract', () => {
         const metadata = metadataToken;
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
 
-        const mainnetExitRoot = await supernets2GlobalExitRoot.lastMainnetExitRoot();
+        const mainnetExitRoot = await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot();
 
         // compute root merkle tree in Js
         const height = 32;
@@ -336,20 +336,20 @@ describe('Supernets2Bridge Contract', () => {
         const rootJSRollup = merkleTree.getRoot();
 
         // check only rollup account with update rollup exit root
-        await expect(supernets2GlobalExitRoot.updateExitRoot(rootJSRollup))
+        await expect(polygonZkEVMGlobalExitRoot.updateExitRoot(rootJSRollup))
             .to.be.revertedWith('OnlyAllowedContracts');
 
         // add rollup Merkle root
-        await expect(supernets2GlobalExitRoot.connect(rollup).updateExitRoot(rootJSRollup))
-            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
+        await expect(polygonZkEVMGlobalExitRoot.connect(rollup).updateExitRoot(rootJSRollup))
+            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(mainnetExitRoot, rootJSRollup);
 
         // check roots
-        const rollupExitRootSC = await supernets2GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRootSC = await polygonZkEVMGlobalExitRoot.lastRollupExitRoot();
         expect(rollupExitRootSC).to.be.equal(rootJSRollup);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(mainnetExitRoot, rollupExitRootSC);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot());
 
         // check merkle proof
         const proof = merkleTree.getProofTreeByIndex(0);
@@ -357,7 +357,7 @@ describe('Supernets2Bridge Contract', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proof, index, rootJSRollup)).to.be.equal(true);
-        expect(await supernets2BridgeContract.verifyMerkleProof(
+        expect(await polygonZkEVMBridgeContract.verifyMerkleProof(
             leafValue,
             proof,
             index,
@@ -368,7 +368,7 @@ describe('Supernets2Bridge Contract', () => {
          * claim
          * Can't claim without tokens
          */
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -382,13 +382,13 @@ describe('Supernets2Bridge Contract', () => {
         )).to.be.revertedWith('ERC20: transfer amount exceeds balance');
 
         // transfer tokens, then claim
-        await expect(tokenContract.transfer(supernets2BridgeContract.address, amount))
+        await expect(tokenContract.transfer(polygonZkEVMBridgeContract.address, amount))
             .to.emit(tokenContract, 'Transfer')
-            .withArgs(deployer.address, supernets2BridgeContract.address, amount);
+            .withArgs(deployer.address, polygonZkEVMBridgeContract.address, amount);
 
-        expect(false).to.be.equal(await supernets2BridgeContract.isClaimed(index));
+        expect(false).to.be.equal(await polygonZkEVMBridgeContract.isClaimed(index));
 
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -400,7 +400,7 @@ describe('Supernets2Bridge Contract', () => {
             amount,
             metadata,
         ))
-            .to.emit(supernets2BridgeContract, 'ClaimEvent')
+            .to.emit(polygonZkEVMBridgeContract, 'ClaimEvent')
             .withArgs(
                 index,
                 originNetwork,
@@ -408,10 +408,10 @@ describe('Supernets2Bridge Contract', () => {
                 destinationAddress,
                 amount,
             ).to.emit(tokenContract, 'Transfer')
-            .withArgs(supernets2BridgeContract.address, acc1.address, amount);
+            .withArgs(polygonZkEVMBridgeContract.address, acc1.address, amount);
 
         // Can't claim because nullifier
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -423,7 +423,7 @@ describe('Supernets2Bridge Contract', () => {
             amount,
             metadata,
         )).to.be.revertedWith('AlreadyClaimed');
-        expect(true).to.be.equal(await supernets2BridgeContract.isClaimed(index));
+        expect(true).to.be.equal(await polygonZkEVMBridgeContract.isClaimed(index));
     });
 
     it('should claim tokens from Rollup to Mainnet', async () => {
@@ -436,7 +436,7 @@ describe('Supernets2Bridge Contract', () => {
         const metadata = metadataToken; // since we are inserting in the exit root can be anything
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
 
-        const mainnetExitRoot = await supernets2GlobalExitRoot.lastMainnetExitRoot();
+        const mainnetExitRoot = await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot();
 
         // compute root merkle tree in Js
         const height = 32;
@@ -459,20 +459,20 @@ describe('Supernets2Bridge Contract', () => {
         const rootJSRollup = merkleTreeRollup.getRoot();
 
         // check only rollup account with update rollup exit root
-        await expect(supernets2GlobalExitRoot.updateExitRoot(rootJSRollup))
+        await expect(polygonZkEVMGlobalExitRoot.updateExitRoot(rootJSRollup))
             .to.be.revertedWith('OnlyAllowedContracts');
 
         // add rollup Merkle root
-        await expect(supernets2GlobalExitRoot.connect(rollup).updateExitRoot(rootJSRollup))
-            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
+        await expect(polygonZkEVMGlobalExitRoot.connect(rollup).updateExitRoot(rootJSRollup))
+            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(mainnetExitRoot, rootJSRollup);
 
         // check roots
-        const rollupExitRootSC = await supernets2GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRootSC = await polygonZkEVMGlobalExitRoot.lastRollupExitRoot();
         expect(rollupExitRootSC).to.be.equal(rootJSRollup);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(mainnetExitRoot, rollupExitRootSC);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot());
 
         // check merkle proof
         const proof = merkleTreeRollup.getProofTreeByIndex(0);
@@ -480,7 +480,7 @@ describe('Supernets2Bridge Contract', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proof, index, rootJSRollup)).to.be.equal(true);
-        expect(await supernets2BridgeContract.verifyMerkleProof(
+        expect(await polygonZkEVMBridgeContract.verifyMerkleProof(
             leafValue,
             proof,
             index,
@@ -496,11 +496,11 @@ describe('Supernets2Bridge Contract', () => {
         const salt = ethers.utils.solidityKeccak256(['uint32', 'address'], [networkIDRollup, tokenAddress]);
         const minimalBytecodeProxy = tokenWrappedFactory.bytecode;
         const hashInitCode = ethers.utils.solidityKeccak256(['bytes', 'bytes'], [minimalBytecodeProxy, metadataToken]);
-        const precalculateWrappedErc20 = await ethers.utils.getCreate2Address(supernets2BridgeContract.address, salt, hashInitCode);
+        const precalculateWrappedErc20 = await ethers.utils.getCreate2Address(polygonZkEVMBridgeContract.address, salt, hashInitCode);
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20);
 
         // Use precalculatedWrapperAddress and check if matches
-        expect(await supernets2BridgeContract.precalculatedWrapperAddress(
+        expect(await polygonZkEVMBridgeContract.precalculatedWrapperAddress(
             networkIDRollup,
             tokenAddress,
             tokenName,
@@ -508,7 +508,7 @@ describe('Supernets2Bridge Contract', () => {
             decimals,
         )).to.be.equal(precalculateWrappedErc20);
 
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -520,33 +520,33 @@ describe('Supernets2Bridge Contract', () => {
             amount,
             metadata,
         ))
-            .to.emit(supernets2BridgeContract, 'ClaimEvent')
+            .to.emit(polygonZkEVMBridgeContract, 'ClaimEvent')
             .withArgs(
                 index,
                 originNetwork,
                 tokenAddress,
                 destinationAddress,
                 amount,
-            ).to.emit(supernets2BridgeContract, 'NewWrappedToken')
+            ).to.emit(polygonZkEVMBridgeContract, 'NewWrappedToken')
             .withArgs(originNetwork, tokenAddress, precalculateWrappedErc20, metadata)
             .to.emit(newWrappedToken, 'Transfer')
             .withArgs(ethers.constants.AddressZero, deployer.address, amount);
 
         // Assert maps created
-        const newTokenInfo = await supernets2BridgeContract.wrappedTokenToTokenInfo(precalculateWrappedErc20);
+        const newTokenInfo = await polygonZkEVMBridgeContract.wrappedTokenToTokenInfo(precalculateWrappedErc20);
 
         expect(newTokenInfo.originNetwork).to.be.equal(networkIDRollup);
         expect(newTokenInfo.originTokenAddress).to.be.equal(tokenAddress);
-        expect(await supernets2BridgeContract.getTokenWrappedAddress(
+        expect(await polygonZkEVMBridgeContract.getTokenWrappedAddress(
             networkIDRollup,
             tokenAddress,
         )).to.be.equal(precalculateWrappedErc20);
-        expect(await supernets2BridgeContract.getTokenWrappedAddress(
+        expect(await polygonZkEVMBridgeContract.getTokenWrappedAddress(
             networkIDRollup,
             tokenAddress,
         )).to.be.equal(precalculateWrappedErc20);
 
-        expect(await supernets2BridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
+        expect(await polygonZkEVMBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
         expect(await newWrappedToken.name()).to.be.equal(tokenName);
@@ -554,7 +554,7 @@ describe('Supernets2Bridge Contract', () => {
         expect(await newWrappedToken.decimals()).to.be.equal(decimals);
 
         // Can't claim because nullifier
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -574,7 +574,7 @@ describe('Supernets2Bridge Contract', () => {
         const index2 = 1;
         const proof2 = merkleTreeRollup.getProofTreeByIndex(index2);
 
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof2,
             index2,
             mainnetExitRoot,
@@ -586,7 +586,7 @@ describe('Supernets2Bridge Contract', () => {
             amount,
             metadata,
         ))
-            .to.emit(supernets2BridgeContract, 'ClaimEvent')
+            .to.emit(polygonZkEVMBridgeContract, 'ClaimEvent')
             .withArgs(
                 index,
                 originNetwork,
@@ -597,16 +597,16 @@ describe('Supernets2Bridge Contract', () => {
             .withArgs(ethers.constants.AddressZero, deployer.address, amount);
 
         // Burn Tokens
-        const depositCount = await supernets2BridgeContract.depositCount();
+        const depositCount = await polygonZkEVMBridgeContract.depositCount();
         const wrappedTokenAddress = newWrappedToken.address;
         const newDestinationNetwork = networkIDRollup;
 
-        const rollupExitRoot = await supernets2GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRoot = await polygonZkEVMGlobalExitRoot.lastRollupExitRoot();
 
         // create a new deposit
-        await expect(newWrappedToken.approve(supernets2BridgeContract.address, amount))
+        await expect(newWrappedToken.approve(polygonZkEVMBridgeContract.address, amount))
             .to.emit(newWrappedToken, 'Approval')
-            .withArgs(deployer.address, supernets2BridgeContract.address, amount);
+            .withArgs(deployer.address, polygonZkEVMBridgeContract.address, amount);
 
         /*
          *  pre compute root merkle tree in Js
@@ -627,7 +627,7 @@ describe('Supernets2Bridge Contract', () => {
             amount,
             metadataHashMainnet,
         );
-        const leafValueMainnetSC = await supernets2BridgeContract.getLeafValue(
+        const leafValueMainnetSC = await polygonZkEVMBridgeContract.getLeafValue(
             LEAF_TYPE_ASSET,
             originNetwork,
             originTokenAddress,
@@ -645,8 +645,8 @@ describe('Supernets2Bridge Contract', () => {
         expect(await newWrappedToken.totalSupply()).to.be.equal(ethers.BigNumber.from(amount).mul(2));
         expect(await newWrappedToken.balanceOf(deployer.address)).to.be.equal(ethers.BigNumber.from(amount).mul(2));
 
-        await expect(supernets2BridgeContract.bridgeAsset(newDestinationNetwork, destinationAddress, amount, wrappedTokenAddress, true, '0x'))
-            .to.emit(supernets2BridgeContract, 'BridgeEvent')
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(newDestinationNetwork, destinationAddress, amount, wrappedTokenAddress, true, '0x'))
+            .to.emit(polygonZkEVMBridgeContract, 'BridgeEvent')
             .withArgs(
                 LEAF_TYPE_ASSET,
                 originNetwork,
@@ -657,17 +657,17 @@ describe('Supernets2Bridge Contract', () => {
                 metadataMainnet,
                 depositCount,
             )
-            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
+            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(rootJSMainnet, rollupExitRoot)
             .to.emit(newWrappedToken, 'Transfer')
             .withArgs(deployer.address, ethers.constants.AddressZero, amount);
 
         expect(await newWrappedToken.totalSupply()).to.be.equal(amount);
         expect(await newWrappedToken.balanceOf(deployer.address)).to.be.equal(amount);
-        expect(await newWrappedToken.balanceOf(supernets2BridgeContract.address)).to.be.equal(0);
+        expect(await newWrappedToken.balanceOf(polygonZkEVMBridgeContract.address)).to.be.equal(0);
 
         // check merkle root with SC
-        const rootSCMainnet = await supernets2BridgeContract.getDepositRoot();
+        const rootSCMainnet = await polygonZkEVMBridgeContract.getDepositRoot();
         expect(rootSCMainnet).to.be.equal(rootJSMainnet);
 
         // check merkle proof
@@ -676,7 +676,7 @@ describe('Supernets2Bridge Contract', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValueMainnet, proofMainnet, indexMainnet, rootSCMainnet)).to.be.equal(true);
-        expect(await supernets2BridgeContract.verifyMerkleProof(
+        expect(await polygonZkEVMBridgeContract.verifyMerkleProof(
             leafValueMainnet,
             proofMainnet,
             indexMainnet,
@@ -684,11 +684,11 @@ describe('Supernets2Bridge Contract', () => {
         )).to.be.equal(true);
 
         const computedGlobalExitRoot2 = calculateGlobalExitRoot(rootJSMainnet, rollupExitRoot);
-        expect(computedGlobalExitRoot2).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot2).to.be.equal(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot());
     });
 
-    it('should Supernets2Bridge and sync the current root with events', async () => {
-        const depositCount = await supernets2BridgeContract.depositCount();
+    it('should PolygonZkEVMBridge and sync the current root with events', async () => {
+        const depositCount = await polygonZkEVMBridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const tokenAddress = ethers.constants.AddressZero; // Ether
         const amount = ethers.utils.parseEther('10');
@@ -698,7 +698,7 @@ describe('Supernets2Bridge Contract', () => {
         const metadata = '0x';// since is ether does not have metadata
 
         // create 3 new deposit
-        await expect(supernets2BridgeContract.bridgeAsset(
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(
             destinationNetwork,
             destinationAddress,
             amount,
@@ -708,7 +708,7 @@ describe('Supernets2Bridge Contract', () => {
             { value: amount },
         ))
             .to.emit(
-                supernets2BridgeContract,
+                polygonZkEVMBridgeContract,
                 'BridgeEvent',
             )
             .withArgs(
@@ -722,7 +722,7 @@ describe('Supernets2Bridge Contract', () => {
                 depositCount,
             );
 
-        await expect(supernets2BridgeContract.bridgeAsset(
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(
             destinationNetwork,
             destinationAddress,
             amount,
@@ -732,7 +732,7 @@ describe('Supernets2Bridge Contract', () => {
             { value: amount },
         ))
             .to.emit(
-                supernets2BridgeContract,
+                polygonZkEVMBridgeContract,
                 'BridgeEvent',
             )
             .withArgs(
@@ -746,7 +746,7 @@ describe('Supernets2Bridge Contract', () => {
                 depositCount.add(1),
             );
 
-        await expect(supernets2BridgeContract.bridgeAsset(
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(
             destinationNetwork,
             destinationAddress,
             amount,
@@ -756,7 +756,7 @@ describe('Supernets2Bridge Contract', () => {
             { value: amount },
         ))
             .to.emit(
-                supernets2BridgeContract,
+                polygonZkEVMBridgeContract,
                 'BridgeEvent',
             )
             .withArgs(
@@ -775,14 +775,14 @@ describe('Supernets2Bridge Contract', () => {
         const merkleTree = new MerkleTreeBridge(height);
 
         // Get the deposit's events
-        const filter = supernets2BridgeContract.filters.BridgeEvent(
+        const filter = polygonZkEVMBridgeContract.filters.BridgeEvent(
             null,
             null,
             null,
             null,
             null,
         );
-        const events = await supernets2BridgeContract.queryFilter(filter, 0, 'latest');
+        const events = await polygonZkEVMBridgeContract.queryFilter(filter, 0, 'latest');
         events.forEach((e) => {
             const { args } = e;
             const leafValue = getLeafValue(
@@ -798,7 +798,7 @@ describe('Supernets2Bridge Contract', () => {
         });
 
         // Check merkle root with SC
-        const rootSC = await supernets2BridgeContract.getDepositRoot();
+        const rootSC = await polygonZkEVMBridgeContract.getDepositRoot();
         const rootJS = merkleTree.getRoot();
 
         expect(rootSC).to.be.equal(rootJS);
@@ -815,7 +815,7 @@ describe('Supernets2Bridge Contract', () => {
         const metadata = metadataToken;
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
 
-        const mainnetExitRoot = await supernets2GlobalExitRoot.lastMainnetExitRoot();
+        const mainnetExitRoot = await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot();
 
         // compute root merkle tree in Js
         const height = 32;
@@ -835,16 +835,16 @@ describe('Supernets2Bridge Contract', () => {
         const rootJSRollup = merkleTree.getRoot();
 
         // add rollup Merkle root
-        await expect(supernets2GlobalExitRoot.connect(rollup).updateExitRoot(rootJSRollup))
-            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
+        await expect(polygonZkEVMGlobalExitRoot.connect(rollup).updateExitRoot(rootJSRollup))
+            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(mainnetExitRoot, rootJSRollup);
 
         // check roots
-        const rollupExitRootSC = await supernets2GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRootSC = await polygonZkEVMGlobalExitRoot.lastRollupExitRoot();
         expect(rollupExitRootSC).to.be.equal(rootJSRollup);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(mainnetExitRoot, rollupExitRootSC);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot());
 
         // check merkle proof
         const proof = merkleTree.getProofTreeByIndex(0);
@@ -852,7 +852,7 @@ describe('Supernets2Bridge Contract', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proof, index, rootJSRollup)).to.be.equal(true);
-        expect(await supernets2BridgeContract.verifyMerkleProof(
+        expect(await polygonZkEVMBridgeContract.verifyMerkleProof(
             leafValue,
             proof,
             index,
@@ -860,7 +860,7 @@ describe('Supernets2Bridge Contract', () => {
         )).to.be.equal(true);
 
         // Can't claim without tokens
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -874,12 +874,12 @@ describe('Supernets2Bridge Contract', () => {
         )).to.be.revertedWith('ERC20: transfer amount exceeds balance');
 
         // transfer tokens, then claim
-        await expect(tokenContract.transfer(supernets2BridgeContract.address, amount))
+        await expect(tokenContract.transfer(polygonZkEVMBridgeContract.address, amount))
             .to.emit(tokenContract, 'Transfer')
-            .withArgs(deployer.address, supernets2BridgeContract.address, amount);
+            .withArgs(deployer.address, polygonZkEVMBridgeContract.address, amount);
 
         // Check Destination network does not match assert
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -893,7 +893,7 @@ describe('Supernets2Bridge Contract', () => {
         )).to.be.revertedWith('DestinationNetworkInvalid');
 
         // Check GlobalExitRoot invalid assert
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -907,7 +907,7 @@ describe('Supernets2Bridge Contract', () => {
         )).to.be.revertedWith('GlobalExitRootInvalid');
 
         // Check Invalid smt proof assert
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index + 1, // Wrong index
             mainnetExitRoot,
@@ -920,7 +920,7 @@ describe('Supernets2Bridge Contract', () => {
             metadata,
         )).to.be.revertedWith('InvalidSmtProof');
 
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -932,7 +932,7 @@ describe('Supernets2Bridge Contract', () => {
             amount,
             metadata,
         ))
-            .to.emit(supernets2BridgeContract, 'ClaimEvent')
+            .to.emit(polygonZkEVMBridgeContract, 'ClaimEvent')
             .withArgs(
                 index,
                 originNetwork,
@@ -940,10 +940,10 @@ describe('Supernets2Bridge Contract', () => {
                 destinationAddress,
                 amount,
             ).to.emit(tokenContract, 'Transfer')
-            .withArgs(supernets2BridgeContract.address, deployer.address, amount);
+            .withArgs(polygonZkEVMBridgeContract.address, deployer.address, amount);
 
         // Check Already claimed_claim
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -968,7 +968,7 @@ describe('Supernets2Bridge Contract', () => {
         const metadata = '0x'; // since is ether does not have metadata
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
 
-        const mainnetExitRoot = await supernets2GlobalExitRoot.lastMainnetExitRoot();
+        const mainnetExitRoot = await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot();
 
         // compute root merkle tree in Js
         const height = 32;
@@ -988,16 +988,16 @@ describe('Supernets2Bridge Contract', () => {
         const rootJSRollup = merkleTree.getRoot();
 
         // add rollup Merkle root
-        await expect(supernets2GlobalExitRoot.connect(rollup).updateExitRoot(rootJSRollup))
-            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
+        await expect(polygonZkEVMGlobalExitRoot.connect(rollup).updateExitRoot(rootJSRollup))
+            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(mainnetExitRoot, rootJSRollup);
 
         // check roots
-        const rollupExitRootSC = await supernets2GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRootSC = await polygonZkEVMGlobalExitRoot.lastRollupExitRoot();
         expect(rollupExitRootSC).to.be.equal(rootJSRollup);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(mainnetExitRoot, rollupExitRootSC);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot());
 
         // check merkle proof
         const proof = merkleTree.getProofTreeByIndex(0);
@@ -1005,7 +1005,7 @@ describe('Supernets2Bridge Contract', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proof, index, rootJSRollup)).to.be.equal(true);
-        expect(await supernets2BridgeContract.verifyMerkleProof(
+        expect(await polygonZkEVMBridgeContract.verifyMerkleProof(
             leafValue,
             proof,
             index,
@@ -1016,7 +1016,7 @@ describe('Supernets2Bridge Contract', () => {
          * claim
          * Can't claim without ether
          */
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -1031,10 +1031,10 @@ describe('Supernets2Bridge Contract', () => {
 
         const balanceDeployer = await ethers.provider.getBalance(deployer.address);
         /*
-         * Create a deposit to add ether to the Supernets2Bridge
+         * Create a deposit to add ether to the PolygonZkEVMBridge
          * Check deposit amount ether asserts
          */
-        await expect(supernets2BridgeContract.bridgeAsset(
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(
             networkIDRollup,
             destinationAddress,
             amount,
@@ -1045,7 +1045,7 @@ describe('Supernets2Bridge Contract', () => {
         )).to.be.revertedWith('AmountDoesNotMatchMsgValue');
 
         // Check mainnet destination assert
-        await expect(supernets2BridgeContract.bridgeAsset(
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(
             networkIDMainnet,
             destinationAddress,
             amount,
@@ -1055,8 +1055,8 @@ describe('Supernets2Bridge Contract', () => {
             { value: amount },
         )).to.be.revertedWith('DestinationNetworkInvalid');
 
-        // This is used just to pay ether to the Supernets2Bridge smart contract and be able to claim it afterwards.
-        expect(await supernets2BridgeContract.bridgeAsset(
+        // This is used just to pay ether to the PolygonZkEVMBridge smart contract and be able to claim it afterwards.
+        expect(await polygonZkEVMBridgeContract.bridgeAsset(
             networkIDRollup,
             destinationAddress,
             amount,
@@ -1067,10 +1067,10 @@ describe('Supernets2Bridge Contract', () => {
         ));
 
         // Check balances before claim
-        expect(await ethers.provider.getBalance(supernets2BridgeContract.address)).to.be.equal(amount);
+        expect(await ethers.provider.getBalance(polygonZkEVMBridgeContract.address)).to.be.equal(amount);
         expect(await ethers.provider.getBalance(deployer.address)).to.be.lte(balanceDeployer.sub(amount));
 
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -1082,7 +1082,7 @@ describe('Supernets2Bridge Contract', () => {
             amount,
             metadata,
         ))
-            .to.emit(supernets2BridgeContract, 'ClaimEvent')
+            .to.emit(polygonZkEVMBridgeContract, 'ClaimEvent')
             .withArgs(
                 index,
                 originNetwork,
@@ -1092,11 +1092,11 @@ describe('Supernets2Bridge Contract', () => {
             );
 
         // Check balances after claim
-        expect(await ethers.provider.getBalance(supernets2BridgeContract.address)).to.be.equal(ethers.utils.parseEther('0'));
+        expect(await ethers.provider.getBalance(polygonZkEVMBridgeContract.address)).to.be.equal(ethers.utils.parseEther('0'));
         expect(await ethers.provider.getBalance(deployer.address)).to.be.lte(balanceDeployer);
 
         // Can't claim because nullifier
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -1121,7 +1121,7 @@ describe('Supernets2Bridge Contract', () => {
         const metadata = '0x176923791298713271763697869132'; // since is ether does not have metadata
         const metadataHash = ethers.utils.solidityKeccak256(['bytes'], [metadata]);
 
-        const mainnetExitRoot = await supernets2GlobalExitRoot.lastMainnetExitRoot();
+        const mainnetExitRoot = await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot();
 
         // compute root merkle tree in Js
         const height = 32;
@@ -1141,16 +1141,16 @@ describe('Supernets2Bridge Contract', () => {
         const rootJSRollup = merkleTree.getRoot();
 
         // add rollup Merkle root
-        await expect(supernets2GlobalExitRoot.connect(rollup).updateExitRoot(rootJSRollup))
-            .to.emit(supernets2GlobalExitRoot, 'UpdateGlobalExitRoot')
+        await expect(polygonZkEVMGlobalExitRoot.connect(rollup).updateExitRoot(rootJSRollup))
+            .to.emit(polygonZkEVMGlobalExitRoot, 'UpdateGlobalExitRoot')
             .withArgs(mainnetExitRoot, rootJSRollup);
 
         // check roots
-        const rollupExitRootSC = await supernets2GlobalExitRoot.lastRollupExitRoot();
+        const rollupExitRootSC = await polygonZkEVMGlobalExitRoot.lastRollupExitRoot();
         expect(rollupExitRootSC).to.be.equal(rootJSRollup);
 
         const computedGlobalExitRoot = calculateGlobalExitRoot(mainnetExitRoot, rollupExitRootSC);
-        expect(computedGlobalExitRoot).to.be.equal(await supernets2GlobalExitRoot.getLastGlobalExitRoot());
+        expect(computedGlobalExitRoot).to.be.equal(await polygonZkEVMGlobalExitRoot.getLastGlobalExitRoot());
 
         // check merkle proof
         const proof = merkleTree.getProofTreeByIndex(0);
@@ -1158,7 +1158,7 @@ describe('Supernets2Bridge Contract', () => {
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proof, index, rootJSRollup)).to.be.equal(true);
-        expect(await supernets2BridgeContract.verifyMerkleProof(
+        expect(await polygonZkEVMBridgeContract.verifyMerkleProof(
             leafValue,
             proof,
             index,
@@ -1169,7 +1169,7 @@ describe('Supernets2Bridge Contract', () => {
          * claim
          * Can't claim a message as an assets
          */
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -1186,7 +1186,7 @@ describe('Supernets2Bridge Contract', () => {
          * claim
          * Can't claim without ether
          */
-        await expect(supernets2BridgeContract.claimMessage(
+        await expect(polygonZkEVMBridgeContract.claimMessage(
             proof,
             index,
             mainnetExitRoot,
@@ -1201,10 +1201,10 @@ describe('Supernets2Bridge Contract', () => {
 
         const balanceDeployer = await ethers.provider.getBalance(deployer.address);
         /*
-         * Create a deposit to add ether to the Supernets2Bridge
+         * Create a deposit to add ether to the PolygonZkEVMBridge
          * Check deposit amount ether asserts
          */
-        await expect(supernets2BridgeContract.bridgeAsset(
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(
             networkIDRollup,
             destinationAddress,
             amount,
@@ -1215,7 +1215,7 @@ describe('Supernets2Bridge Contract', () => {
         )).to.be.revertedWith('AmountDoesNotMatchMsgValue');
 
         // Check mainnet destination assert
-        await expect(supernets2BridgeContract.bridgeAsset(
+        await expect(polygonZkEVMBridgeContract.bridgeAsset(
             networkIDMainnet,
             destinationAddress,
             amount,
@@ -1225,8 +1225,8 @@ describe('Supernets2Bridge Contract', () => {
             { value: amount },
         )).to.be.revertedWith('DestinationNetworkInvalid');
 
-        // This is used just to pay ether to the Supernets2Bridge smart contract and be able to claim it afterwards.
-        expect(await supernets2BridgeContract.bridgeAsset(
+        // This is used just to pay ether to the PolygonZkEVMBridge smart contract and be able to claim it afterwards.
+        expect(await polygonZkEVMBridgeContract.bridgeAsset(
             networkIDRollup,
             destinationAddress,
             amount,
@@ -1237,11 +1237,11 @@ describe('Supernets2Bridge Contract', () => {
         ));
 
         // Check balances before claim
-        expect(await ethers.provider.getBalance(supernets2BridgeContract.address)).to.be.equal(amount);
+        expect(await ethers.provider.getBalance(polygonZkEVMBridgeContract.address)).to.be.equal(amount);
         expect(await ethers.provider.getBalance(deployer.address)).to.be.lte(balanceDeployer.sub(amount));
 
         // Check mainnet destination assert
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,
@@ -1254,7 +1254,7 @@ describe('Supernets2Bridge Contract', () => {
             metadata,
         )).to.be.revertedWith('InvalidSmtProof');
 
-        await expect(supernets2BridgeContract.claimMessage(
+        await expect(polygonZkEVMBridgeContract.claimMessage(
             proof,
             index,
             mainnetExitRoot,
@@ -1266,7 +1266,7 @@ describe('Supernets2Bridge Contract', () => {
             amount,
             metadata,
         ))
-            .to.emit(supernets2BridgeContract, 'ClaimEvent')
+            .to.emit(polygonZkEVMBridgeContract, 'ClaimEvent')
             .withArgs(
                 index,
                 originNetwork,
@@ -1276,11 +1276,11 @@ describe('Supernets2Bridge Contract', () => {
             );
 
         // Check balances after claim
-        expect(await ethers.provider.getBalance(supernets2BridgeContract.address)).to.be.equal(ethers.utils.parseEther('0'));
+        expect(await ethers.provider.getBalance(polygonZkEVMBridgeContract.address)).to.be.equal(ethers.utils.parseEther('0'));
         expect(await ethers.provider.getBalance(deployer.address)).to.be.lte(balanceDeployer);
 
         // Can't claim because nullifier
-        await expect(supernets2BridgeContract.claimAsset(
+        await expect(polygonZkEVMBridgeContract.claimAsset(
             proof,
             index,
             mainnetExitRoot,

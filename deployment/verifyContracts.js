@@ -89,10 +89,10 @@ async function main() {
             {
                 address: deployOutputParameters.supernets2Address,
                 constructorArguments: [
-                    deployOutputParameters.supernets2GlobalExitRootAddress,
+                    deployOutputParameters.PolygonZkEVMGlobalExitRootAddress,
                     deployOutputParameters.maticTokenAddress,
                     deployOutputParameters.verifierAddress,
-                    deployOutputParameters.supernets2BridgeAddress,
+                    deployOutputParameters.PolygonZkEVMBridgeAddress,
                     deployOutputParameters.supernets2DataCommitteeContract,
                     deployOutputParameters.chainID,
                     deployOutputParameters.forkID,
@@ -108,10 +108,10 @@ async function main() {
         await hre.run(
             'verify:verify',
             {
-                address: deployOutputParameters.supernets2GlobalExitRootAddress,
+                address: deployOutputParameters.PolygonZkEVMGlobalExitRootAddress,
                 constructorArguments: [
                     deployOutputParameters.supernets2Address,
-                    deployOutputParameters.supernets2BridgeAddress,
+                    deployOutputParameters.PolygonZkEVMBridgeAddress,
                 ],
             },
         );
@@ -123,7 +123,7 @@ async function main() {
         await hre.run(
             'verify:verify',
             {
-                address: deployOutputParameters.supernets2BridgeAddress,
+                address: deployOutputParameters.PolygonZkEVMBridgeAddress,
             },
         );
     } catch (error) {
