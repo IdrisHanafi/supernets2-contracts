@@ -412,7 +412,7 @@ describe('Polygon Data Committee', () => {
         const signaturesAndAddrs = genSignaturesAndAddrs(hashToSign);
 
         // Replace last address
-        const withWrongSignature = `0xF${signaturesAndAddrs.slice(3)}`;
+        const withWrongSignature = `0xB${signaturesAndAddrs.slice(3)}`;
         await expect(supernets2Contract.connect(trustedSequencer)
             .sequenceBatches([sequence], deployer.address, withWrongSignature))
             .to.be.revertedWith('CommitteeAddressDoesntExist');

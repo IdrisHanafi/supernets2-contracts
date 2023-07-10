@@ -271,7 +271,7 @@ async function main() {
 
         // If it was already deployed, check that the initialized calldata matches the actual deployment
         expect(precalculateGLobalExitRootAddress).to.be.equal(await PolygonZkEVMBridgeContract.globalExitRootManager());
-        expect(precalculateSupernets2Address).to.be.equal(await PolygonZkEVMBridgeContract.supernets2address());
+        expect(precalculateSupernets2Address).to.be.equal(await PolygonZkEVMBridgeContract.polygonZkEVMaddress());
     }
 
     console.log('\n#######################');
@@ -279,7 +279,7 @@ async function main() {
     console.log('#######################');
     console.log('PolygonZkEVMGlobalExitRootAddress:', await PolygonZkEVMBridgeContract.globalExitRootManager());
     console.log('networkID:', await PolygonZkEVMBridgeContract.networkID());
-    console.log('supernets2address:', await PolygonZkEVMBridgeContract.supernets2address());
+    console.log('supernets2address:', await PolygonZkEVMBridgeContract.polygonZkEVMaddress());
 
     // Import OZ manifest the deployed contracts, its enough to import just the proxy, the rest are imported automatically (admin/impl)
     await upgrades.forceImport(proxyBridgeAddress, PolygonZkEVMBridgeFactory, 'transparent');

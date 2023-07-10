@@ -158,7 +158,7 @@ describe('Emergency mode test', () => {
             .to.be.revertedWith('BatchNotSequencedOrNotSequenceEnd');
 
         await expect(PolygonZkEVMBridgeContract.connect(deployer).activateEmergencyState())
-            .to.be.revertedWith('OnlySupernets2');
+            .to.be.revertedWith('OnlyPolygonZkEVM');
 
         await expect(supernets2Contract.activateEmergencyState(0))
             .to.emit(supernets2Contract, 'EmergencyStateActivated')
@@ -277,7 +277,7 @@ describe('Emergency mode test', () => {
             .to.be.revertedWith('OnlyNotEmergencyState');
 
         await expect(PolygonZkEVMBridgeContract.connect(deployer).deactivateEmergencyState())
-            .to.be.revertedWith('OnlySupernets2');
+            .to.be.revertedWith('OnlyPolygonZkEVM');
 
         await expect(supernets2Contract.deactivateEmergencyState())
             .to.be.revertedWith('OnlyAdmin');
