@@ -559,8 +559,8 @@ async function main() {
 
     const outputJson = {
         supernets2Address: supernets2Contract.address,
-        PolygonZkEVMBridgeAddress: PolygonZkEVMBridgeContract.address,
-        PolygonZkEVMGlobalExitRootAddress: PolygonZkEVMGlobalExitRoot.address,
+        polygonZkEVMBridgeAddress: PolygonZkEVMBridgeContract.address,
+        polygonZkEVMGlobalExitRootAddress: PolygonZkEVMGlobalExitRoot.address,
         supernets2DataCommitteeContract: supernets2DataCommitteeContract.address,
         maticTokenAddress,
         verifierAddress: verifierContract.address,
